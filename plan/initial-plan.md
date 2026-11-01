@@ -1,9 +1,9 @@
 # The History of Berania — Project Plan
 
 **Working subtitle:** Ironbound Crown  
-**Current mech production override — November 1, 2026:** The user rejected the generated cutout assemblies and adopted a faithful Blender source model, validated as a still before animation, then rendered into 2D sprites. Weapons and shields are interchangeable assets attached to reusable hand sockets. See `MEMORY.md` and `mech-art-direction.md`; older cutout-production guidance below is superseded for mechs. Runtime gameplay remains 2D.
+**Current mech production override — November 1, 2026:** The user clarified that the game stays 2D, with complete rigged 3D models animated offline and rendered into sprites for smooth coherent motion. Rejected cutout assemblies remain rejected. Match a still first, then validate motion at gameplay size, six facings, supported equipped loadouts, and heraldry compositing before expansion. See `MEMORY.md` and [mech-art-direction.md](mech-art-direction.md). Live runtime 3D battles are not selected.
 
-**Plan version:** 1.8 — refined story, two routes, banners, owned mechs, and shared inventory
+**Plan version:** 1.9 — validation safeguards and clarified 3D-source/2D-animation pipeline
 
 **Prepared:** November 1, 2026  
 **Reviewed:** November 1, 2026  
@@ -18,11 +18,13 @@ This plan translates the stated game concept into an implementation roadmap. The
 
 **Latest refinement — November 1, 2026:** Adopt [the campaign refinement](campaign-refinement.md): ordinary battles up to ten units per side and major battles up to fifteen; every deployed mech counts within the cap. Allied nobles provide campaign support; the protagonist, princess, and up to five companions are personal mech pilots. Add a simple two-color/one-emblem warband crest, persistent owned frames, shared workshop storage, fitted modules, and party equipment/trade inventory. Girls' Frontline 2: Exilium is the latest tactical reference, adapted to hexes and the established 2D presentation. Earlier Field of Glory/Tacticus and portrait-diplomacy references remain compatible supporting references. These are planned additions, not implemented features.
 
-**Document authority:** This file retains production history and milestone gates; story-canon.md controls plot and campaign-refinement.md controls the newly agreed campaign/equipment systems. Numerical prices, statistics, and exact scene content remain production/balance work. Existing prototype limits stay identified as staged limits, not the final campaign ceiling.
+**Document authority:** This file retains production history and milestone gates; story-canon.md controls plot and campaign-refinement.md controls the newly agreed campaign/equipment systems. [Validation review](validation-review.md) records the gap audit, corrected contracts, and remaining evidence/specification gates. Numerical prices, statistics, and exact scene content remain production/balance work. Existing prototype limits stay identified as staged limits, not the final campaign ceiling.
 
 **Art and animation authority:** The user's latest request adds movement, attacks, and other animation, retains the 2D requirement, and delegates art decisions to the assistant. The painted style and fixed camera below are selected under that delegation. Animation budgets and timing targets are implementation recommendations to validate in the prototype; they do not add real-time combat or new tactical resources.
 
 **Current implementation — prototype 0.1:** The user subsequently requested a full QA review followed by a prototype/short intro/demo in the existing Godot project. `scenes/main.tscn` now runs **Dawn at Greyford**: painted title, four short canon memories and portrait dialogue → a solo, zero-gold 30-hex travel slice with fog and two moving NPC markers → an animated three-versus-three defense → victory or free recovery → a saved return to the village. This bounded intro/travel integration precedes external M1 playtests under that request; it does not complete the full M2–M7 scope. See [the QA review and adopted rules](../qa/qa-review.md) and [launch/controls instructions](../README.md).
+
+**Current implementation — prototype 0.2:** A bounded preparation slice now adds an isolated persistent workshop review, owned frame instances and pilot assignment, hull repairs/refits, two module slots, cargo trading, crest creation/preview, loadout practice, schema-1 migration, and save-failure rollback. The real workshop opens after Greyford's defense; real campaign banner founding remains locked. The opening now reflects revision 2 without revealing the prince's persecution prematurely. See [the implementation/review report](../qa/prototype-0.2-review.md). This does not close M3/M5 or the full animation/campaign gates. The 3D study remains unapproved; no new model animation is claimed.
 
 **Historical implementation evidence (unchanged by this documentation revision):** The 1.6 baseline passed 252 checks and a native round-4 victory with free repairs. Version 1.7 passes 260 checks (227 model/persistence/animation + 33 application flow), including intro navigation, zero-gold rewards and older-save preservation. Native review verified the four memories, pursuit dialogue and solo start; details are recorded in the QA report. A new-game victory now leaves 40 gold/1 trust. Older saves retain their existing resources. A data PCK exports and initializes with the matching engine; a standalone application is still unverified because export templates are absent. Keep milestone review gates separate from checked implementation tasks.
 
@@ -57,6 +59,8 @@ The first playable chapter ends when the player earns permission to establish a 
 
 **Experience to validate:** A mech should feel powerful beside infantry, while infantry positioning and support remain useful. A village job should visibly improve either the player's fighting options or their standing in the region. These are the chapter's two main design hypotheses.
 
+**Validation additions:** Follow [the review](validation-review.md) and campaign-refinement.md integration safeguards for companion frame access, disabled-frame recovery, shared allied deployment caps, story-event protection, successor/envoy bargain variants, and explicit recognition-based victory. These are required contracts for later implementation, not completed features.
+
 ### Gameplay pillars and visual direction
 
 - **Campaign fantasy:** Roam with a persistent warband, recruit faction troops, visit settlements, trade, escort caravans, earn reputation, and negotiate with nobles. Mount & Blade is the reference for this campaign freedom; Berania's travel and battles use turns.
@@ -81,7 +85,7 @@ These are proposed production limits, not additional features to build:
 - **Small politics:** Neutral, allied, or at war per faction pair; a truce is a temporary bar on declaring war. Trade/access are explicit agreement terms, not extra diplomatic stance systems. Start with one authored motive per ruler and a five-step house opinion scale.
 - **One siege at a time:** One fort, one siege progress meter, one reusable assault map, one capture objective in the M7 pilot. No wall-by-wall construction, siege-engine crafting, starvation economy, or command of several fronts.
 - **Learn one layer at a time:** Combat → travel/fog/NPCs → preparation/trade → rescues → portrait alliance → small war/siege frontier. Each layer must reuse established controls and saves.
-- **Polish a small asset set:** Share layered animation rigs, weapon effects, terrain families, and background paintings. Animate only units actually used in the current milestone; extra frame counts, cinematic cameras, and custom animations for every noble are outside the initial budget.
+- **Polish a small asset set:** Share coherent 3D source rigs and action libraries for rendered units, weapon effects, terrain families, and background paintings. Animate only units actually used in the current milestone; texture/frame budgets, cinematic cameras, and custom animations for every noble are outside the initial budget.
 
 The first chapter proves a roaming warband and local consequences; the M7 frontier slice proves the requested war/siege experience. Both are required steps toward the intended game. Twenty-two nobles remain the story framework while only the current region's actors need active simulation.
 
@@ -175,9 +179,9 @@ Ranged recovery may include a reload gesture, but it does not create an ammuniti
 
 ### Art and animation production budget
 
-Use a hybrid of **layered 2D rigs for reusable bodies/portraits** and short sprite strips for weapon accents, impacts, smoke, and special poses. Hand-author strong poses and easing to avoid a stiff cutout appearance. Build one humanoid base set supporting sword/gun equipment, one starter mech set, shared effects, and a small terrain kit first. Different faction clothing, shield shapes, helmets, and banners provide distinct identities while reusing compatible motion. Do not mirror asymmetrical heraldry, weapon hands, or equipment incorrectly.
+Use complete rigged 3D sources rendered into 2D sprites for mech bodies; disconnected 2D cutout assembly is rejected. Validate the faithful still, a short smooth-motion sample at gameplay size, then six-facing supported loadouts. The same coherent-model method is a proposed production default for later animated troops/horses; portraits and interface art can remain authored 2D. Build only the current milestone's approved assets, shared effects, and small terrain kit. Costume, equipment, and crest variations need a measured export/texture budget rather than an assumption of free combinations.
 
-Represent all six tactical facing directions consistently in the 2D artwork. Reuse body parts, mirrored neutral components, and animation poses where valid, with directional weapon/crest corrections; author extra views only where reuse fails. Locomotion and visual turning never change the six-way facing rule. The number of drawn figures and idle phase offsets are presentation details, not saved soldiers or extra units.
+Render all six tactical facings from the same source, camera, light rig, and scale; reuse the rig and complete animation rather than stretching or mirroring illustrated body pieces. Keep weapon grips, foot anchors, and surface heraldry consistent, with review of sampling, stride, transitions, and alpha edges. Locomotion and turning do not change the six-way rule. Decorative figure count is not saved troop strength. Use the supported-loadout registry and heraldry masks to bound variant production.
 
 **Production order:** M0 style sheet, scale/palette sample, and a motion test → M1 complete starter action loops using rough art → M2 world travel and minimal ambience → M3–M4 reusable equipment/caravan/incident effects → M5 one polished battle vignette plus the chapter's coherent map/portrait/UI pass → M7 gate/siege additions. Finish only the currently used unit types. In M5, review the polished vignette before spreading that treatment across the chapter; do not replace all assets based on an untested still image.
 
@@ -492,6 +496,7 @@ Define hex line-of-sight edge/tie behavior, facing-sector mapping, strength/dama
 - [ ] Recruit infantry as small formation instances with troop counts; retain one activation per formation. Give the two initial faction rosters distinct names, silhouettes, and at least one tactical difference while sharing role logic.
 - [ ] Add settlement buy/sell menus with a small goods list, posted prices, cargo capacity, protected quest items, and validated transfers; keep workshop reserves separate from carried trade goods.
 - [ ] Add take/leave battle loot, explicit cargo overflow, last-usable-frame sale protection, and single-claim frame/equipment rewards. Use only art-supported loadouts.
+- [ ] Prove legacy migration, ownership invariants, disabled-frame recovery, pilot/frame progression separation, and the supported-loadout/texture budget before expanding inventory content.
 - [ ] Set deployment capacity separately from roster capacity, validate mission restrictions, and ensure mandatory battles remain possible with the starter force.
 - [ ] Add basic unit experience progression; defer the full five-rank promotion tree.
 - [ ] Extend M2 persistence into one campaign slot with manual saving, automatic battle-boundary and End Turn checkpoints, schema/build versions, a last-good backup, and validated safe replacement.
@@ -531,7 +536,7 @@ Define hex line-of-sight edge/tie behavior, facing-sector mapping, strength/dama
 **Depends on:** M4.
 
 - [ ] Expand the implemented memory intro into the chapter's authored story delivery: shared childhood/betrothal, second son's murder and usurpation, princess's imprisonment, father's sacrifice, mech escape, ten secessionists/twelve loyalists and imperial hunt. Culpability and starting allegiance are fixed; optional playable escape work must reuse combat and remain separately scoped.
-- [ ] Add two companion mech pilots, each with one distinctive benefit, a short optional questline, and an available-frame deployment requirement. Stage extra approved frames only after visual and ownership checks.
+- [ ] Add two companion mech pilots, each with one distinctive benefit, a short optional questline, and a usable owned/loaned frame or a validated guaranteed affordable acquisition path. Recruitment alone creates no mech. Budget distinct available frame instances if both can deploy together; new chassis artwork still needs approval.
 - [ ] Add a minor noble or authorized house representative as the introduction to political recruitment; establish whose pact they can negotiate and what support they control.
 - [ ] Use that character as the single recruitable noble ally, with an explicit recruitment condition and a lasting benefit; do not add a second introduction character by accident.
 - [ ] Keep companion membership separate from noble-house allegiance in data and UI.
@@ -644,7 +649,7 @@ Campaign logic calculates rewards from authored definitions. Retrying the same r
 - Serialize data, not live nodes or scene paths. Record schema version, build/content version, stable content references, instance IDs, resources, location, health/injuries, equipment, progression, relationships, quest states, reward claims, and pending/applied encounter IDs.
 - Also record troop strength, faction variants, campaign turn/budget, explored hexes and known locations, NPC party jobs/positions/strength, contact reservations, known news, market/cargo state, agreements/alliances, route/caravan progress, event deadlines, and paid transaction IDs. M5 adds opinion and committed dialogue choices; M7 adds war/truce, fort and siege state. Recompute current visibility from saved party positions and vision rules. Commit each End Turn as one stable snapshot; interruption must not move actors or charge cargo twice.
 - Write a temporary file in the save directory, validate it, preserve the last known-good snapshot, then replace the current save. Check write/replacement errors. Validate both current and backup on load; never overwrite the backup with a corrupt current file.
-- Check field types, resource bounds, unique instance IDs, and referenced content before replacing live state. For incompatible schemas or removed required content, preserve the file and explain recovery or starting a new campaign. Automatic migration is deferred until a released save format needs it; prototype builds may explicitly declare incompatibility.
+- Check field types, resource bounds, unique instance IDs, and referenced content before replacing live state. The new owned-frame/inventory schema requires a tested versioned migration from schema 1, preserving gold, progress, and the starter's condition; this supersedes the earlier migration deferral for that transition. Unknown schemas or removed required content must preserve the file and explain recovery without overwriting a good backup.
 - New Game requires confirmation before replacing an existing campaign. Manual saving is available only at stable campaign points. Loading during battle abandons current battle progress and returns to the last checkpoint after confirmation.
 
 ### Casualties, repairs, and a viable economy
@@ -738,7 +743,7 @@ Use lightweight automated checks where rules are easy to break, and playtests fo
 
 Milestone completion requires both its stated acceptance criteria and a runnable build. Do not treat a list of implemented systems as evidence that the chapter is enjoyable.
 
-### Plan coverage and consistency audit — version 1.8
+### Plan coverage and consistency audit — version 1.9
 
 This is a **planning audit**, not evidence of implemented or playtested gameplay. Every requested feature below has a design description, a production stage, and a verification path. Later-stage features remain part of the intended game; they are not silently removed to keep the opening chapter small.
 
@@ -770,7 +775,8 @@ This is a **planning audit**, not evidence of implemented or playtested gameplay
 | Dependable saves and recovery | Atomic turn/encounter/agreement commits, backups, free essential recovery | M2–M7 persistence and zero-gold checks |
 | Refined family tragedy and two routes | Required evidence, permanent bargain, midpoint rescue, independent escape/exile, final refusal to surrender | Story canon; full-campaign branch/recognition checks |
 | Personal banner | Two colors, one centered preset emblem, warband name, shared crest rendering | M5 headquarters and heraldry propagation |
-| Owned mechs and workshop fitting | Shared reserves, purchased/gifted frames, pilot assignment, weapons/shields, modules/refits | M3 transactions, compatibility, art support, and save migration |
+| Owned mechs and workshop fitting | Shared reserves, purchased/gifted frames, pilot assignment, weapons/shields, modules/refits | M3 transactions, compatibility, art support, and required save migration |
+| Smooth coherent animation | Complete animated 3D sources rendered to 2D; still/motion/loadout gates; bounded atlas and heraldry plan | Art direction, production brief, and validation review; no runtime 3D conversion |
 | Party inventory | Shared armory, carried cargo, protected quest items, take/leave loot | M3 capacity/ownership/reward/recovery checks |
 | Final tactical scale and hero roles | 10 ordinary/15 major; each mech counts; nobles support the campaign; companions pilot | Staged deployment and roster expansion |
 
@@ -787,7 +793,7 @@ This is a **planning audit**, not evidence of implemented or playtested gameplay
 | Kingdom management overwhelms the tactical game | Gate expansion behind the first-chapter review |
 | Combat lacks meaningful decisions | Test the six-unit encounter early and revise positioning, terrain, or equipment before adding content |
 | Too many bespoke assets | Reuse silhouettes, tiles, portraits, and encounter layouts; add polish after rules stabilize |
-| Directional animations multiply the asset budget | Share layered rigs and common actions, correct asymmetric equipment, animate only current-roster units, and validate the polished starter vignette before expanding |
+| Directional animations multiply the asset budget | Share coherent 3D source rigs and common actions, cap supported rendered loadouts, measure atlas memory, correct asymmetric equipment, and validate still/motion/heraldry before expansion |
 | Effects slow turns, obscure tactics, or trigger rules twice | Restrained timings/effects, speed and reduced-motion options, visibility-filtered playback, and outcomes resolved once independently of animation |
 | Faction uniqueness multiplies every unit into a new system | Share role logic, prove two small rosters, and vary doctrine/equipment before creating new mechanics |
 | Hidden hexes make legal moves hard to read | Use path/cost previews, temporary reach shading, facing markers, and clear hover selection; playtest at normal zoom |
@@ -830,6 +836,7 @@ This is a **planning audit**, not evidence of implemented or playtested gameplay
 - [x] Princess kept alive because he cannot kill his sister; father innocent of the persecution.
 - [x] Rare military mechs and early scarce guns within medieval magitech.
 - [ ] Finalize draft names/ages, exact assassination methods, scene dialogue, and neighboring geography without reopening settled plot decisions.
+- [ ] Write the small cover/mage/guard/casualty rules sheet, economy acquisition proof, and story state graph identified in validation-review.md before implementing the affected mechanics.
 - [ ] Party/roster capacities, mission restrictions, starting economy, and exact free-recovery health/injury rules.
 - [ ] Noble ally identity, motivation, recruitment terms, and contribution.
 - [ ] How companion and noble quests fit alongside the village-trust milestone.
@@ -866,6 +873,7 @@ Maintain a decision register in this plan or a linked file: **ID, decision, adop
 | G18 | Persistent frames with fitted equipment/modules, shared friendly-workshop garage | Established by user; two mounts/two module slots are plan defaults | Buy, receive, retain, swap, and upgrade machines | M3 and frame expansion |
 | G19 | Shared party gear and trade goods; no personal human equipment slots | User-selected scope | Meaningful equipment and commerce without individual soldier outfitting | M3 |
 | G20 | Permanent midpoint rescue/crown bargain and two endings | Established by user; authored names and scene details remain draft | Give the restoration a consequential personal choice | Full campaign |
+| G21 | Keep runtime 2D; animate coherent 3D source models and render sprites | Reconfirmed by user; sampling, loadout, and heraldry details are production defaults | Replace rejected cutout motion while retaining the intended game | Art pipeline and M1–M5 |
 
 ### Before the full campaign
 
@@ -927,3 +935,11 @@ Use the selected painted 2D art direction and animation-state matrix as the pres
 | 1.6 | November 1, 2026 | Reviewed the complete plan as QA; adopted concrete prototype rules; implemented and played the short Greyford intro/travel/battle/save demo; recorded 252 passing checks, native victory/recovery evidence, PCK initialization, fixed defects, and open export/human/performance gates without claiming later milestones complete |
 | 1.7 | November 1, 2026 | Adopted the user's full backstory correction; fixed the assassin, princess/heir and marriage promise, archduke's sacrifice, seized mech escape, ten secessionists/twelve loyalists, imperial hunt and restoration goal; updated four-memory intro, temporary local allies and zero-gold start while preserving old saves |
 | 1.8 | November 1, 2026 | Recorded the detailed story interview, tragic royal-family motive, false accusation and inherited-domain betrayal, required evidence, permanent three-house bargain, midpoint rescue, independent escape/exile, corrupting throne and two endings; adopted 10/15 battle caps, companion pilots and campaign-support nobles, simple banner creation, persistent owned frames, shared workshop storage, modules/refits, party inventory, and save/acceptance requirements. Documentation only; runtime and prior QA evidence unchanged. |
+| 1.9 | November 1, 2026 | Audited plan coverage and edge cases; clarified that smooth animation uses complete 3D sources rendered to 2D, not runtime 3D; added still/motion/loadout/heraldry and asset-budget gates, required schema migration, companion frame acquisition, disable/recovery and progression contracts, allied deployment limits, protected story outcomes, successor/envoy variants, and recognition-based ending checks. Documentation only. |
+
+
+## Prototype 0.3 implementation note — November 2, 2026
+
+The Living March now connects the existing workshop/prologue to a bounded regional travel → settlement/guild/recruitment → deployment → mixed battle → persistent results loop. Four settlements, five routed NPC party kinds, fog, timed authored rescue incidents, one support pact, supply raids and shared-cap deployment are implemented. Ordinary maps are 14×10; 18×12 supports the isolated 15-v-15 capacity practice. Cover/mage/guard/casualty defaults are in `docs/regional-combat-rules.md`.
+
+This advances parts of the regional and preparation milestones; it does not close the full M2/M3/M5/M7 milestones, companion acquisition, conquest/siege, 22-house simulation, branch/endings, human playtest, final art, measured worst-case rendering performance, or standalone distribution gates. New tactical markers are temporary 2D symbols; the complete source-model still/motion gates remain unchanged. See `qa/prototype-0.3-review.md` for current test evidence and review steps.

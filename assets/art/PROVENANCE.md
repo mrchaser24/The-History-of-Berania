@@ -1,3 +1,15 @@
+# Runtime review copies — prototype 0.2
+
+The approved original Oathkeeper concept remains the visual authority. Both cutout assemblies below are rejected historical studies; their functional checks do not establish art approval.
+
+- review/oathkeeper_reference.png is an exact runtime copy of mechs/concepts/oathkeeper.png.
+- review/oathkeeper_study.png is an exact runtime copy of the existing assets/models/oathkeeper/oathkeeper-model-study.png Blender render.
+- The study is explicitly labeled unapproved, unrigged, unanimated, and absent from battle integration.
+- No new image generation, model regeneration, or animation production was performed for these copies.
+- Original concept/model source directories stay excluded from export; these two review images are intentionally packaged for the comparison screen.
+
+## Historical production records
+
 # Demo art provenance
 
 ## Ivory knight refresh — November 1, 2026
@@ -25,3 +37,8 @@ Use case: stylized-concept. Asset type: painted 2D tactical game battlefield bac
 ### portrait
 
 Use case: stylized-concept. Asset type: original transparent-background 2D portrait for a medieval industrial strategy RPG. Primary request: a single adult female border captain, waist-up, three-quarter view facing slightly right, calm resolute expression, shoulder-length dark brown hair partially tied back, warm olive skin, slate-blue cloak over practical weathered steel brigandine with restrained brass fittings, small ivory embroidered heraldic sun on shoulder, one gloved hand resting at belt, unhelmeted. Style: beautifully hand-painted storybook realism, expressive face, elegant selective ink lines, textured brush shading, warm upper-left light and cool navy shadows; grounded medieval clothing, no futuristic suit. Composition: entire hair, shoulders and hands comfortably inside the frame; cropped at lower hips; isolated on genuine transparent background. Constraints: no text, no lettering, no frame, no scenery, no logos, no watermark, original character.
+
+
+## Prototype 0.3 tactical presentation — November 2, 2026
+
+Regional battles add original code-drawn 2D role symbols (whole mech, sword/shield, crossed pikes, firearm, horse, cannon and magical star), wall/rough-ground markers, target lines and objective/UI feedback in `scripts/demo.gd`. These are explicitly temporary tactical assets. They reuse the existing painted field/map backgrounds; no image-generation, body-part assembly, Blender edits, new rig, new animation set or model approval occurred. The opening/trial and legacy gallery retain their prior assets and approval status.

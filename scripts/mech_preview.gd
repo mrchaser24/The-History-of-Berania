@@ -129,8 +129,8 @@ func _capture():
 
 func _draw():
 	draw_rect(Rect2(0, 0, 1600, 900), Color("14252e"))
-	_label("OATHKEEPER  /  IVORY KNIGHT", Vector2(32, 42), 28, Color("eee5d1"))
-	_label("Six articulated animations · one master atlas · six facings", Vector2(32, 66), 16, Color("a4b4b6"))
+	_label("OATHKEEPER  /  REJECTED CUTOUT STUDY", Vector2(32, 42), 28, Color("eee5d1"))
+	_label("Historical motion prototype · replacement uses complete animated 3D sources rendered to 2D", Vector2(32, 66), 16, Color("a4b4b6"))
 	for index in 6:
 		var rect = Rect2(32 + (index % 3) * 522, 145 + floori(index / 3.0) * 360, 504, 340)
 		# Neutral review surface exposes proportions and joint gaps instead of hiding

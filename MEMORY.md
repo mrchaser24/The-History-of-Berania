@@ -3,7 +3,7 @@
 Explicit user decisions, not inferred preferences. Updated November 1, 2026.
 
 - **Mech appearance:** The complete original ivory/navy knight illustration is Oathkeeper's visual authority (`assets/art/mechs/concepts/oathkeeper.png`). The user rejected both assembled 2D cutout revisions. Passing functional checks does not establish visual approval.
-- **Production approach:** Use one faithful 3D source model, validate a matching still first, then rig/animate and render consistent directions into 2D game sprites. The game remains 2D. Do not return to regenerating disconnected body parts and stretching them into a generic skeleton.
+- **Production approach (reconfirmed in the validation discussion):** Keep the game 2D. Use complete, faithful rigged 3D source models, animate them coherently, and render consistent sprites. The user clarified that this is the intended replacement for the bad cutout motion, rather than selecting live runtime 3D battles. Validate a matching still, then smooth motion at gameplay size before expansion. Do not return to disconnected generated body parts stretched through a generic 2D skeleton.
 - **Interchangeable equipment:** Mech weapons and shields can change. Keep them separate from the body, with stable attachment points and consistent scale/grips. The starting sword and shield are an initial loadout, not permanent body geometry. Equipment must remain replaceable without rebuilding the mech or changing its identity.
 - **Animation compatibility:** Future weapon classes may need their own attack/hold poses. Keep the body rig reusable and accommodate shield-dependent guard/block presentation. Do not assume every future weapon uses the starting sword animation.
 - **Variety:** All four mech concepts are approved; Oathkeeper is the starting mech. Cinderjack, Kestrel, and Bastion are future production designs.
@@ -26,4 +26,15 @@ Explicit user decisions, not inferred preferences. Updated November 1, 2026.
 
 New character/house names, ages, companion concepts, the first son's border-war death, and detailed implementation defaults are authored drafts in the plans; do not present them as separately user-specified facts or new visual approvals.
 
-Current art work: `plan/mech-art-direction.md` and `docs/mech-production-brief.md`. Story authority: `plan/story-canon.md`. Adopted campaign systems and staged acceptance criteria: `plan/campaign-refinement.md`. Milestone history: `plan/initial-plan.md`. These documentation updates do not mark the new systems as implemented.
+Current art work: `plan/mech-art-direction.md` and `docs/mech-production-brief.md`. Story authority: `plan/story-canon.md`. Adopted campaign systems and staged acceptance criteria: `plan/campaign-refinement.md`. Milestone history: `plan/initial-plan.md`. Gap audit and remaining gates: `plan/validation-review.md`.
+
+## Implementation status — separate from user design decisions
+
+Prototype 0.2 adds a title-screen Workshop review with its own save, frame ownership/pilot assignment, repairs/refits/modules, cargo trade, banner preview, and loadout practice. The real village workshop opens after its defense. Campaign saves migrate from schema 1 to 2. See `qa/prototype-0.2-review.md` for verification and limits.
+
+The existing 3D model study is still unapproved, unrigged, and unanimated. Art review compares it with the original; it does not approve the study or replace battle art. Do not mistake the workshop prototype's functional completion for acceptance of the rejected cutout renderer or permission to bypass the still/motion review sequence.
+
+
+Prototype 0.3 (November 2) connects the preserved opening/workshop to a bounded four-settlement regional loop, five roaming party kinds, timed incidents, guild cargo deliveries, paid recruitment, one house-support pact and supply raids. Regional battles use locked owned-frame/formation snapshots, cover, rough terrain, seven roles, abilities and persistent casualties/replenishment. Ordinary fields are 14×10; separate 10-v-10/15-v-15 capacity practices include allies in the shared cap. Saves migrate schemas 1/2 to 3. Regional review has its own save and no headquarters. See `qa/prototype-0.3-review.md` and `docs/regional-combat-rules.md` for actual verification and limits. This is implementation status, not a new user design decision or completion of the full campaign.
+
+New regional battles use explicitly temporary original 2D tactical symbols. The original opening/trial retain their old renderer. No source model, rig, animation, still/motion approval, or runtime-3D decision changed.

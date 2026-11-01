@@ -1,30 +1,30 @@
 extends RefCounted
 
-# Opening narration. Canon follows the user's story correction; names remain provisional.
+# Revision 2 opening: the persecution's full truth remains a later investigation.
 const MEMORIES = [
 	{
-		"title": "A promise before the crown.",
-		"body": "You are the son of an archduke. You and the Emperor's daughter grew up together, sharing lessons, laughter, and dreams of the future. She is first in line to Berania's throne. Watching your bond deepen, your father and the Emperor promised that one day you would marry.",
+		"title": "Three friends. One promise.",
+		"body": "You are an archduke's son. You grew up with the Emperor's daughter and her younger brother, a friend as close as your own kin. She is the eldest child and rightful heir. You loved her, and she loved you. When your fathers promised your marriage, it was the future you both wanted.",
 		"caption": "BEFORE THE COUP",
 		"closing": "You once imagined a lifetime beside her. Neither of you imagined it would begin with a war."
 	},
 	{
-		"title": "The second son's betrayal.",
-		"body": "The Emperor's second son, born to a concubine, assassinated his father and seized the throne. He cast the princess, the rightful heir, into a dungeon. The palace where you had grown up became a trap. You and your father had to fight your way out.",
+		"title": "The friend who took the throne.",
+		"body": "The Emperor's second son assassinated his father and claimed the crown. He called the overthrow necessary. You did not yet know what had driven him to it. He imprisoned his sister, then accused your father and you of being accomplices to the dead Emperor. The palace became a trap.",
 		"caption": "THE NIGHT THE EMPIRE CHANGED",
-		"closing": "The princess lives, imprisoned beneath the power stolen from her. The new emperor wants you dead."
+		"closing": "Your childhood friend wants you brought back in chains. The princess remains his prisoner."
 	},
 	{
 		"title": "Your father's last command.",
-		"body": "During the escape, your father stayed behind to hold off your pursuers. He gave his life so you could reach the castle's mech bay. Wounded and alone, you climbed into a walker and fought through the gates. By dawn, the machine was all you had left.",
+		"body": "Your father stayed behind to hold the passage. An imperial commander's soldiers killed him while you fought toward the mech bay. Wounded and alone, you climbed into Oathkeeper and broke through the gates. Your father's sacrifice bought your escape. By dawn, the battered machine was all you had left.",
 		"caption": "THE ARCHDUKE'S LAST WORDS",
 		"closing": "\"Save the princess. Save the empire. Live long enough to keep that promise.\""
 	},
 	{
 		"title": "One fugitive. A divided empire.",
-		"body": "Of Berania's twenty-two great nobles, ten broke away to found their own factions. The remaining twelve joined the new emperor as imperial loyalists. His forces are hunting you. You have no coin, no soldiers, and no home to return to. Only a battered mech, and a promise you cannot abandon.",
+		"body": "Ten of Berania's twenty-two great houses declared independence. Twelve backed the new Emperor, including the relative who took your inheritance. Rival banners now compete for the empire while imperial patrols hunt you. You have no coin, no soldiers, and no safe home. Only Oathkeeper, and a promise you have not yet broken.",
 		"caption": "THE ROAD TO GREYFORD",
-		"closing": "Earn your first pay. Build an army. Free the true heir, and take back the empire together."
+		"closing": "Earn your first pay. Build an army. Discover what your promise will cost."
 	}
 ]
 

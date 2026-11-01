@@ -1,8 +1,8 @@
 # Berania — Campaign, Banners, Mechs, and Inventory
 
-**Revision:** 1 — November 1, 2026
+**Revision:** 2 — November 1, 2026
 
-**Status:** Adopted planning direction and implementation defaults, saved after the story/design interview. These systems are staged future work; the existing Greyford demo does not implement them.
+**Status:** Adopted planning direction and implementation defaults. Prototype 0.2 implemented the ownership/workshop subset; prototype 0.3 implements a bounded regional loop and larger combined-arms battles. Remaining acceptance scenarios still describe future work. See [the current review](../qa/prototype-0.3-review.md) and [implemented rules](../docs/regional-combat-rules.md).
 
 Read [story-canon.md](story-canon.md) for plot authority, [initial-plan.md](initial-plan.md) for production milestones, and [mech-art-direction.md](mech-art-direction.md) for approved visual production. Later user instructions take priority.
 
@@ -72,7 +72,7 @@ Keep permanent chassis refits, removable modules, weapons, shields, and current 
 
 Preserve the approved model-once/render-to-2D workflow. Weapons and shields remain separate source assets on stable attachment points. Modules and refits do not authorize replacing heads, torsos, arms, or legs or redesigning Oathkeeper.
 
-Only advertise supported visible loadouts. Weapon classes may require different attack/hold animations and rendered combinations; one starting sword animation or baked atlas does not support arbitrary gear.
+Only advertise supported visible loadouts. Weapon classes may require different attack/hold animations and rendered combinations; one starting sword animation or baked atlas does not support arbitrary gear. Review a faithful still, then smooth motion at battle size, then complete six-facing loadout sets. Use a bounded supported-loadout registry and a separate per-frame heraldry-mask/UV proof; reserve machines do not preload every atlas. See [the revised art pipeline](mech-art-direction.md).
 
 Oathkeeper remains first in production. Cinderjack, Kestrel, and Bastion are approved future concepts, not completed assets. Heraldry and upgrade visuals must pass the same reference/readability checks as other art changes.
 
@@ -121,7 +121,43 @@ Recommended ten-unit example:
 
 This is an example composition, not a required army. Five companions is the campaign maximum, not five mandatory deployments in every encounter.
 
-## 6. Delivery and persistence
+## 6. Integration safeguards
+
+These are implementation defaults closing gaps found in [the validation review](validation-review.md), not new implemented features.
+
+### Pilot access, progression, and defeat
+
+- The first two optional companion arcs must include a usable owned/loaned frame or a demonstrated guaranteed acquisition path within the chapter economy. Mere recruitment does not spawn a free mech. If both pilots can deploy together, the content budget must include two distinct available frame instances.
+- Pilot experience and learned pilot abilities stay with the pilot when changing frames. Frame condition, permanent refits, and installed equipment stay with the owned machine; formation experience stays with its formation. Exact first skills remain a combat/content-sheet task.
+- In the initial ownership version, hero defeat causes recoverable injury and frame disablement rather than permanent companion death or deletion of the only required frame. Named story deaths remain authored events.
+- Persist surviving troop strength and disabled hull state after battles. Replenishment and optional full repairs use defined workshop/village services; emergency recovery restores a minimum required battle-capable force without gold or saleable rewards.
+- Keep at least one accessible essential workshop/recovery service and a retryable required job. Balance prices so emergency repairs, loaned frames, and repeatable work cannot generate resale or reward duplication exploits.
+
+### Deployment and combat contracts
+
+- The 10/15 limit applies to the combined participant pool on each side, including nearby allies and settlement defenders. Participants and selected units are locked before battle.
+- Excess strategic strength remains outside the tactical encounter in this first model; no hidden reinforcement waves or free stat bonuses bypass the cap.
+- Future maps must provide legal starting positions, objective access, and maneuvering room for their selected encounter size. Do not put 30 units onto the prototype 8×8 board without a separate layout/readability proof.
+- The [prototype 0.3 rules sheet](../docs/regional-combat-rules.md) defines cover, mage abilities/counters, role-specific guard, and casualty/replenishment defaults for regional encounters; the opening retains its earlier deterministic rules. Presentation alone cannot silently add elevation, collision, damage reduction, or another resource meter.
+
+### Main-story continuity in a changing world
+
+- Main-story outcomes cannot resolve through unseen NPC strength rolls. Off-screen wars may change pressure and garrisons but cannot kill the princess/prince, consume the bargain, complete the rescue, or destroy the final throne encounter.
+- If a bargain-maker is dead, captured, or displaced, an authored house successor/envoy variant must preserve the meaningful offer and refusal opposition. Territorial conquest changes the scene's leverage; it does not silently erase a main route. Keep any unique reward asset single-claimed across variants.
+- Gate the first decisive capital operation through the required evidence and explicit bargain scene. A player-initiated siege cannot bypass that choice or accidentally trigger the finale before route resolution.
+- Accepting writes the permanent route and one-time grant atomically. Taking the money and later attacking the sponsors can affect diplomacy, but does not restore the romance/restoration route or grant the reward again.
+- The princess's independent escape must occur on the dark route before a final capital outcome could imply she is still waiting in the prison. Introduce its ally beforehand.
+- Story-critical protection applies only to required event outcomes; normal roaming wars, defeat recovery, optional quest expiry, and authored ruler succession still operate.
+
+### Recognition and victory
+
+Track explicit acceptance of the intended sovereign separately from opinion, an alliance, a truce, or territory ownership. An alliance alone does not count unless its terms recognize that claim.
+
+Allow house-by-house agreements and authored coalition/peace settlements to secure recognition without requiring 22 repeated sieges. A ruler's death invokes an authored successor or submission outcome for the same house seat.
+
+Check victory against one committed campaign snapshot after the final confrontation and recognition settlement. The simulation cannot invalidate a completed ending on the next unseen AI tick. Before that settlement, declared betrayal can alter recognition only through visible political events and terms.
+
+## 7. Delivery and persistence
 
 Retain the existing milestone gates and current visual-production task. Within the appropriate later milestones, build in this dependency order:
 
@@ -146,9 +182,9 @@ Separate immutable definitions from owned instances:
 
 Battle setup consumes a validated deployment snapshot of selected pilots, frames, and formations. Workshop edits do not mutate an encounter in progress. Battle results update the same owned instances once through shared campaign transactions.
 
-The demo currently uses schema 1 with a single mech-health value. Introduce a versioned migration when these systems are implemented: turn the existing starter into one Oathkeeper instance preserving its health, gold, and progress; add empty reserves and an uncreated/default banner state. Do not alter current runtime saves merely by updating this plan.
+Historical baseline: the original demo used schema 1 with a single mech-health value. Prototype 0.2 migrated it to owned instances in schema 2, and 0.3 adds regional state in schema 3. Introduce a versioned migration when these systems are implemented: turn the existing starter into one Oathkeeper instance preserving its health, gold, and progress; add empty reserves and an uncreated/default banner state. Do not alter current runtime saves merely by updating this plan.
 
-## 7. Acceptance scenarios
+## 8. Acceptance scenarios
 
 - New game begins alone, penniless, with only damaged Oathkeeper.
 - Bought, gifted, fitted, stored, and sold assets cannot duplicate ownership or pilot assignment.
@@ -165,5 +201,11 @@ The demo currently uses schema 1 with a single mech-health value. Introduce a ve
 - Rejecting the bargain leads to a winnable elite-force encounter and midpoint rescue raid.
 - Accepting delivers the four formations, unassigned frame, and gold once, locks the route explicitly, and preserves Aurelia's independent escape into exile.
 - Both routes support diplomacy and conquest toward whole-war recognition and their established ending.
+- Two companion recruitment paths provide affordable usable frames; pilot XP and owned-frame upgrades remain independent.
+- A disabled required frame, missing funds, or unavailable optional equipment cannot remove the emergency recovery path.
+- Nearby allies/garrisons share the side's deployment cap; major maps have sufficient spawn and maneuvering space.
+- Dead/captured/displaced bargain-makers, early capital approaches, sponsor betrayal, and off-screen wars cannot delete or bypass the required branch.
+- Recognition via a negotiated settlement can complete the war without forcing every domain to be personally conquered.
+- Normal/Fast/Quick Resolve and reduced motion preserve outcomes; supported loadouts and banner masks remain visually coherent in all six facings.
 
 These are future implementation acceptance criteria, not test results or completed features.

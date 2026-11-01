@@ -1,25 +1,44 @@
 # Oathkeeper production brief
 
-**Authority:** User-approved original concept in `assets/art/mechs/concepts/oathkeeper.png`; decisions in `MEMORY.md`. Both previous cutout rigs were rejected.
+**Authority:** Original approved concept at assets/art/mechs/concepts/oathkeeper.png; explicit decisions in [MEMORY.md](../MEMORY.md) and the current [mech art direction](../plan/mech-art-direction.md).
+
+**Clarification:** Keep the game 2D. Model, rig, and animate the complete character in Blender, then render complete equipped sprites. Both prior cutout rigs remain rejected; runtime 3D battle scenes are not the chosen replacement.
 
 ## Visual target
 
-An imposing ivory/navy armored knight, not a lanky animal-like walker. Match the small angular visor helmet with two slender crests, broad faceted pauldrons, layered breastplate over an exposed mechanical waist, substantial thigh/shin armor, human-like knees and planted armored boots. Matte worn ivory dominates, restrained navy panels define the armor, and brass identifies joints/fittings. Wear must not overwhelm the silhouette at battle size.
+An imposing ivory/navy armored knight. Match the small angular visor helmet with two slender crests, broad faceted pauldrons, layered breastplate over an exposed mechanical waist, substantial thigh/shin armor, human-like knees, and planted armored boots. Matte worn ivory dominates, restrained navy defines panels, and brass identifies joints/fittings. Wear must not overwhelm the silhouette at battle size.
+
+The existing procedural study is an unapproved blockout. Complete the still-image comparison before animation production. Keep all sides derived from the same model, without arbitrary limb stretching or disconnected generated body pieces.
 
 ## Editable source structure
 
-- `Body`: independent armor shells and mechanical frame in consistent meter-based units.
-- `Rig`: reusable body/hand rig, named anatomical sides and attachments `hand_r` / `hand_l`.
-- `Equipment_Sword`: separate starting sword attached through its grip, replaceable independently of the body.
-- `Equipment_Shield`: separate starting kite shield attached through its mount, replaceable independently of the body.
-- `Render_Setup`: camera, lights and neutral stage. Establish the reference still before producing animation/direction renders.
+- Body: separate coherent armor shells and mechanical frame in consistent meter-based units.
+- Rig: reusable anatomical/mechanical body and hand rig, stable pivots, named sides, and hand_r / hand_l attachments.
+- Equipment_Sword: separate initial sword, attached through its grip.
+- Equipment_Shield: separate initial kite shield, attached through its mount.
+- Render_Setup: common orthographic camera, lights, scale, foot anchor, transparent stage, and fixed bounds.
+- Heraldry export: occlusion-aware panel masks/UV data aligned to beauty frames for later common crest compositing.
 
-Never destructively join weapons or shields into body geometry. Store equipment identifiers/attachment names and keep transforms editable. Future handedness restrictions, dual wielding, inventory rules, ranged statistics and UI are not decided by this asset structure.
+Never join weapons or shields into body geometry. Keep attachment names, equipment IDs, transforms, and supported loadout IDs editable. Gameplay compatibility comes from campaign equipment definitions; the source sockets do not silently authorize every weapon combination.
 
-## First review
+## Review sequence
 
-Produce one large still and a battle-size sample from the same scene. Compare proportions, armor shapes, stance, perspective and materials with the original. Treat the source as a model study until visually reviewed. Do not label an approximate procedural model a faithful finished asset or mass-produce animations because technical checks pass.
+1. Large still and battle-size sample against the original.
+2. Short normal-speed idle/walk/attack sample proving weight, grounded feet, stable equipment, and usable sprite sampling.
+3. All six facings, ordinary/guarded hit, guard, and disabled presentation.
+4. Starting loadout plus one separately reviewed alternate configuration.
+5. In-engine visual playback and standalone export check.
 
-## Later export
+View actual game-size motion, not only enlarged stills or a contact sheet. Functional rig tests do not establish art approval.
 
-Render six tactical angles from the same model with consistent feet/frame bounds and transparent backgrounds. Starting animations: idle, walk, sword attack, ordinary hit, guard, guarded hit. Export complete equipped frames per supported initial loadout, then pack atlases. The source remains modular for future weapons/shields; exported pixels remain tied to their named loadout. A baked sprite sheet does not imply arbitrary equipment swapping.
+## Export and runtime
+
+Render complete equipped characters in six tactical directions. Initial action sampling review range is 24–30 fps; preserve the starter action durations and impact timing separately from frame count. Export a manifest containing frame timing, facing, action/loadout IDs, anchors, bounds, and impact cues.
+
+Pack atlases with alpha-edge padding and measure decoded memory. Do not render every theoretical inventory combination. Maintain an explicit supported-loadout registry and compatible animation set for each visible weapon class; module changes without exterior geometry can initially reuse the same rendered body.
+
+Do not rebake the complete atlas for each banner design. Validate the separate heraldry masks/compositing before extending banners to animated armor panels.
+
+The 2D renderer plays resolved model events without owning combat, rewards, saves, or campaign time. Existing Blender sources stay outside runtime imports; only approved sprite/metadata outputs enter the exported game.
+
+Current work remains planning and source study until the visual gates pass. See [validation-review.md](../plan/validation-review.md) for unresolved production gates and measured full-army checks.
