@@ -15,6 +15,7 @@ const MUTED = Color("aeb8ae")
 const TEAL = Color("8fb9af")
 const RED = Color("d58e79")
 const FIELD = Rect2(42, 142, 1134, 610)
+const BATTLE_FIELD = Rect2(0, 0, 1600, 900)
 
 var font: Font = ThemeDB.fallback_font
 var serif: SystemFont
@@ -204,19 +205,26 @@ func _refresh_ui():
 		_button("Save checkpoint", Rect2(1220, 730, 316, 44), func(): _checkpoint(); _refresh_ui(), false, not animation.is_empty())
 		_button("Return to title", Rect2(1220, 790, 316, 44), func(): modal = "home"; _refresh_ui())
 	elif phase == "battle":
-		for i in 3:
-			var id = ["hero", "blades", "gunners"][i]
-			var u = battle.unit(id)
-			_button(str(i + 1) + "   " + u.name + ("  ✓" if u.acted else ""), Rect2(1220, 345 + 60 * i, 316, 48), func(): _select(id), id == selected, not battle.alive(u) or not animation.is_empty() or battle.side != 0 or not battle.can_activate(id))
-		_button("Guard   [B]", Rect2(785, 800, 162, 49), _guard, false, not _player_ready())
-		_button("Face   [F]", Rect2(960, 800, 162, 49), _face, false, not _player_ready() or battle.unit(selected).get("rotated", true))
-		_button("End turn   [Space]", Rect2(1220, 800, 316, 49), _end_turn, true, battle.side != 0 or not animation.is_empty())
-		_button("Restart encounter", Rect2(1220, 711, 316, 44), func(): modal = "restart"; _refresh_ui(), false, not animation.is_empty())
+		# Bottom-right action buttons — large, touch-friendly, stacked
+		var btn_w = 160.0
+		var btn_h = 56.0
+		var btn_margin = 16.0
+		var btn_gap = 10.0
+		var bx = 1600 - btn_w - btn_margin
+		var by_end = 900 - btn_margin - btn_h
+		_button("End turn", Rect2(bx, by_end, btn_w, btn_h), _end_turn, true, battle.side != 0 or not animation.is_empty())
+		if _player_ready():
+			_button("Guard [B]", Rect2(bx - btn_w - btn_gap, by_end, btn_w, btn_h), _guard, false, not _player_ready())
+			_button("Face [F]", Rect2(bx, by_end - btn_h - btn_gap, btn_w, btn_h), _face, false, not _player_ready() or battle.unit(selected).get("rotated", true))
 	elif phase == "results":
 		_button("Return to Greyford   →" if not practice else "Return to title   →", Rect2(600, 690, 400, 56), _leave_results, true)
 	if phase != "title":
-		_button(["Normal", "Fast ×2", "Quick"][speed_mode] + "   [N]", Rect2(1155, 31, 138, 38), _cycle_speed)
-		_button("Pause   [Esc]", Rect2(1310, 31, 226, 38), func(): modal = "pause"; _refresh_ui())
+		if phase == "battle":
+			_button(["Normal", "×2", "Quick"][speed_mode], Rect2(1400, 12, 80, 38), _cycle_speed)
+			_button("Pause", Rect2(1490, 12, 94, 38), func(): modal = "pause"; _refresh_ui())
+		else:
+			_button(["Normal", "Fast ×2", "Quick"][speed_mode] + "   [N]", Rect2(1155, 31, 138, 38), _cycle_speed)
+			_button("Pause   [Esc]", Rect2(1310, 31, 226, 38), func(): modal = "pause"; _refresh_ui())
 	if not modal.is_empty():
 		for node in ui.get_children():
 			node.visible = false
@@ -232,6 +240,8 @@ func _refresh_ui():
 				_button("Animation: " + ["Normal", "Fast ×2", "Quick"][speed_mode], Rect2(410, 560, 250, 45), _cycle_speed)
 				_button("Reduced motion: " + ("on" if reduced_motion else "off"), Rect2(675, 560, 250, 45), func(): reduced_motion = not reduced_motion; _save_settings(); _refresh_ui())
 				_button("Sound: " + ("off" if muted else "on"), Rect2(940, 560, 250, 45), func(): muted = not muted; _save_settings(); _refresh_ui())
+				if modal == "pause" and phase == "battle":
+					_button("Restart encounter", Rect2(580, 625, 440, 44), func(): modal = "restart"; _refresh_ui())
 			"new", "restart", "home":
 				_button("Confirm", Rect2(550, 575, 240, 52), _confirm_modal, true)
 				_button("Cancel", Rect2(810, 575, 240, 52), func(): modal = ""; _refresh_ui())
@@ -526,23 +536,27 @@ func _cycle_speed():
 	_refresh_ui()
 
 func _pos(p: Vector2i, world: bool = false) -> Vector2:
-	var origin = Vector2(176, 243) if world else Vector2(204, 260)
-	var step_x = 156.0 if world else 112.0
-	var step_y = 88.0 if world else 62.0
+	if world:
+		return Vector2(176, 243) + Vector2((p.x + p.y * 0.5) * 156.0, p.y * 88.0)
+	var origin = Vector2(260, 170)
+	var step_x = 148.0
+	var step_y = 82.0
 	return origin + Vector2((p.x + p.y * 0.5) * step_x, p.y * step_y)
 
 func _cell_at(point: Vector2, world: bool) -> Vector2i:
-	if not FIELD.has_point(point):
+	var bounds = FIELD if world else BATTLE_FIELD
+	if not bounds.has_point(point):
 		return Vector2i(-999, -999)
-	var origin = Vector2(176, 243) if world else Vector2(204, 260)
-	var dx = 156.0 if world else 112.0
-	var dy = 88.0 if world else 62.0
-	var row = (point.y - origin.y) / dy
-	var q = (point.x - origin.x) / dx - row * 0.5
+	if world:
+		var row = (point.y - 243.0) / 88.0
+		var q = (point.x - 176.0) / 156.0 - row * 0.5
+		return Hex.round_axial(q, row)
+	var row = (point.y - 170.0) / 82.0
+	var q = (point.x - 260.0) / 148.0 - row * 0.5
 	return Hex.round_axial(q, row)
 
 func _battle_cell_at(point: Vector2) -> Vector2i:
-	if battle == null or not FIELD.has_point(point):
+	if battle == null or not BATTLE_FIELD.has_point(point):
 		return Vector2i(-999, -999)
 	var front_to_back = battle.units.duplicate()
 	front_to_back.sort_custom(func(a, b): return _pos(a.pos).y > _pos(b.pos).y)
@@ -558,8 +572,8 @@ func _battle_cell_at(point: Vector2) -> Vector2i:
 func _hex(p: Vector2i, world: bool = false, factor: float = 0.96) -> PackedVector2Array:
 	var center = _pos(p, world)
 	var points = PackedVector2Array()
-	var rx = (90.0 if world else 64.6) * factor
-	var ry = (58.7 if world else 41.35) * factor
+	var rx = (90.0 if world else 85.0) * factor
+	var ry = (58.7 if world else 54.5) * factor
 	for i in 6:
 		var angle = TAU * i / 6.0 - PI / 2.0
 		points.append(center + Vector2(cos(angle) * rx, sin(angle) * ry))
@@ -626,6 +640,7 @@ func _draw():
 			_draw_world()
 		else:
 			_draw_battle()
+			_draw_battle_hud()
 	elif phase == "results":
 		_draw_results()
 	if not modal.is_empty():
@@ -679,46 +694,100 @@ func _draw_intro():
 		_wrap(dialogue, Rect2(105, 724, 822, 125), 24, INK, 35, true)
 
 func _draw_game_shell():
+	if phase == "battle":
+		_draw_battle_shell()
+		return
+	# World phase: keep original chrome layout.
 	draw_rect(Rect2(0, 0, 1600, 900), Color("15272e"))
 	draw_rect(Rect2(0, 0, 1600, 104), Color("1d3038"))
 	_crest(Vector2(66, 50), 0.9)
 	_text("BERANIA", Vector2(98, 49), 29, PAPER, true)
 	_text("DAWN AT GREYFORD", Vector2(99, 75), 13, GOLD)
-	_text("THE BORDER ROAD" if phase == "world" else "THE DEFENSE OF GREYFORD", Vector2(413, 47), 20, PAPER)
-	_text("TRAVEL TURN %d  ·  %d / 3 MOVEMENT" % [campaign.turn, campaign.budget] if phase == "world" else "ROUND %d  ·  %s" % [battle.round_number, "YOUR TURN" if battle.side == 0 else "ENEMY TURN"], Vector2(413, 76), 16, TEAL)
+	_text("THE BORDER ROAD", Vector2(413, 47), 20, PAPER)
+	_text("TRAVEL TURN %d  ·  %d / 3 MOVEMENT" % [campaign.turn, campaign.budget], Vector2(413, 76), 16, TEAL)
 	_panel(FIELD, Color("5c7053"))
 	_panel(Rect2(1198, 142, 360, 633))
 	_text("WANTED BY THE CROWN", Vector2(1220, 181), 17, GOLD)
 	_text("Greyford", Vector2(1220, 224), 34, PAPER, true)
 	_text("FIELD NOTES", Vector2(1220, 549), 15, GOLD)
-	if phase == "world":
-		var objective = "Reach the village and answer Captain Mira's call."
-		if campaign.rewarded:
-			objective = "Greyford is safe.\nThe prologue is complete."
-		elif campaign.quest == "retry":
-			objective = "Your company is recovered. Enter Greyford to retry the defense."
-		_wrap(objective, Rect2(1220, 249, 306, 100), 22, PAPER, 33)
-		_text("YOUR COMPANY", Vector2(1220, 380), 16, GOLD)
-		_text("You + Oathkeeper", Vector2(1220, 421), 20)
-		_text("Gold    %d" % campaign.gold, Vector2(1220, 459), 20, PAPER)
-		_text("Local trust    %d" % campaign.trust, Vector2(1400, 459), 18, TEAL)
-		_text("Walker hull    %d / 30" % campaign.mech_hp, Vector2(1220, 496), 18, MUTED)
-		_wrap("Hover to preview a path.", Rect2(1220, 558, 306, 30), 16, MUTED, 23)
-	else:
-		_wrap("Route every enemy.\nOathkeeper must survive.", Rect2(1220, 246, 305, 90), 21, PAPER, 33)
-		var recent = combat_log.slice(maxi(0, combat_log.size() - 2))
-		_wrap("\n".join(PackedStringArray(recent)), Rect2(1220, 566, 305, 130), 15, MUTED, 23)
+	var objective = "Reach the village and answer Captain Mira's call."
+	if campaign.rewarded:
+		objective = "Greyford is safe.\nThe prologue is complete."
+	elif campaign.quest == "retry":
+		objective = "Your company is recovered. Enter Greyford to retry the defense."
+	_wrap(objective, Rect2(1220, 249, 306, 100), 22, PAPER, 33)
+	_text("YOUR COMPANY", Vector2(1220, 380), 16, GOLD)
+	_text("You + Oathkeeper", Vector2(1220, 421), 20)
+	_text("Gold    %d" % campaign.gold, Vector2(1220, 459), 20, PAPER)
+	_text("Local trust    %d" % campaign.trust, Vector2(1400, 459), 18, TEAL)
+	_text("Walker hull    %d / 30" % campaign.mech_hp, Vector2(1220, 496), 18, MUTED)
+	_wrap("Hover to preview a path.", Rect2(1220, 558, 306, 30), 16, MUTED, 23)
 	_panel(Rect2(42, 776, 1134, 92), Color("1d3038"))
-	if phase == "world":
-		_wrap(message, Rect2(66, 794, 1070, 66), 20, PAPER, 29)
-	else:
-		if selected.is_empty():
-			_wrap(message, Rect2(66, 791, 695, 70), 18, PAPER, 27)
-		else:
-			var u = battle.unit(selected)
-			_text(u.name, Vector2(66, 810), 25, PAPER, true)
-			_text("%s %d/%d   ·   ATK %d   ARM %d   MOVE %d   RANGE %d" % ["Hull" if u.kind == "mech" else "Troops", u.hp, u.max_hp, u.attack, u.armor, u.move, u.range], Vector2(66, 843), 16, TEAL)
+	_wrap(message, Rect2(66, 794, 1070, 66), 20, PAPER, 29)
 	_text("CLICK: SELECT / MOVE / ATTACK     B: GUARD     F: FACE     SPACE: END TURN     G: GRID", Vector2(45, 891), 13, MUTED)
+
+func _draw_battle_shell():
+	draw_rect(Rect2(0, 0, 1600, 900), Color("15272e"))
+
+func _draw_battle_hud():
+	# Round pill — top center
+	var round_text = "ROUND %d  ·  %s" % [battle.round_number, "YOUR TURN" if battle.side == 0 else "ENEMY TURN"]
+	var pill_w = 280.0
+	var pill_x = (1600 - pill_w) / 2.0
+	_panel(Rect2(pill_x, 12, pill_w, 38), Color(0.08, 0.14, 0.18, 0.82))
+	_text(round_text, Vector2(pill_x + 18, 39), 17, TEAL if battle.side == 0 else RED)
+
+	# Unit card — top left (selected friendly or hovered enemy)
+	var card_unit: Dictionary = {}
+	var card_enemy = false
+	var inspected = battle.occupant(hovered) if hovered in battle.board else {}
+	if not inspected.is_empty() and inspected.side == 1 and battle.alive(inspected):
+		card_unit = inspected
+		card_enemy = true
+	elif not selected.is_empty():
+		var sel = battle.unit(selected)
+		if battle.alive(sel):
+			card_unit = sel
+	if not card_unit.is_empty():
+		var cx = 16.0
+		var cy = 16.0
+		var cw = 230.0
+		var ch = 160.0
+		var border_color = RED if card_enemy else GOLD
+		_panel(Rect2(cx, cy, cw, ch), Color(0.08, 0.14, 0.18, 0.85), border_color)
+		_text(card_unit.name, Vector2(cx + 14, cy + 30), 22, PAPER, true)
+		_text(card_unit.role, Vector2(cx + 14, cy + 50), 13, MUTED)
+		# HP bar
+		var bar_x = cx + 14
+		var bar_y = cy + 60
+		var bar_w = cw - 28
+		var bar_h = 10.0
+		draw_rect(Rect2(bar_x - 1, bar_y - 1, bar_w + 2, bar_h + 2), INK)
+		var hp_color = TEAL if not card_enemy else RED
+		draw_rect(Rect2(bar_x, bar_y, bar_w * maxf(0, float(card_unit.hp) / card_unit.max_hp), bar_h), hp_color)
+		var hp_label = "Hull" if card_unit.kind == "mech" else "Troops"
+		_text("%s  %d / %d" % [hp_label, card_unit.hp, card_unit.max_hp], Vector2(bar_x, bar_y + 26), 14, PAPER)
+		# Stats
+		_text("ATK %d" % card_unit.attack, Vector2(cx + 14, cy + 112), 15, GOLD)
+		_text("ARM %d" % card_unit.armor, Vector2(cx + 80, cy + 112), 15, GOLD)
+		_text("MOV %d" % card_unit.move, Vector2(cx + 14, cy + 132), 15, GOLD)
+		_text("RNG %d" % card_unit.range, Vector2(cx + 80, cy + 132), 15, GOLD)
+		# Status badge
+		if card_unit.guard:
+			_text("GUARD", Vector2(cx + 148, cy + 112), 14, GOLD)
+		elif card_unit.cohesion == 1:
+			_text("SHAKEN", Vector2(cx + 148, cy + 112), 14, RED)
+		elif card_unit.get("acted", false) and card_unit.side == 0:
+			_text("DONE", Vector2(cx + 148, cy + 112), 14, MUTED)
+
+	# Objective overlay — bottom left
+	_panel(Rect2(16, 810, 320, 72), Color(0.08, 0.14, 0.18, 0.75))
+	_wrap("Route every enemy.\nOathkeeper must survive.", Rect2(28, 822, 296, 56), 16, PAPER, 24)
+
+	# Message toast — top, below pill
+	if not message.is_empty() and animation.is_empty():
+		_panel(Rect2(200, 58, 700, 42), Color(0.08, 0.14, 0.18, 0.82))
+		_wrap(message, Rect2(214, 64, 672, 34), 15, PAPER, 22)
 
 func _draw_world():
 	# A continuous illustrated landmass; only selection and fog use logical hexes.
@@ -813,8 +882,8 @@ func _path_position(path: Array, world: bool) -> Vector2:
 	return _pos(path[index], world).lerp(_pos(path[index + 1], world), sample - index)
 
 func _draw_battle():
-	draw_texture_rect(MEADOW, FIELD.grow(-2), false)
-	draw_rect(FIELD.grow(-2), Color(0.13, 0.2, 0.16, 0.07))
+	draw_texture_rect(MEADOW, BATTLE_FIELD, false)
+	draw_rect(BATTLE_FIELD, Color(0.13, 0.2, 0.16, 0.07))
 	for p in battle.board:
 		if p in cached_reachable and animation.is_empty() and battle.side == 0:
 			draw_colored_polygon(_hex(p, false, 0.92), Color(0.81, 0.9, 0.64, 0.16))
@@ -887,13 +956,6 @@ func _draw_battle():
 		draw_line(arrow - facing_vector.rotated(-0.5) * 8, arrow, GOLD, 2, true)
 	if animation.get("type") == "attack":
 		_draw_impact()
-	if animation.is_empty() and not message.is_empty():
-		_panel(Rect2(62, 162, 696, 57), Color(0.11, 0.18, 0.2, 0.92))
-		var banner = message
-		var inspected = battle.occupant(hovered)
-		if not inspected.is_empty() and inspected.side == 1:
-			banner = "%s · %s\nATK %d  ARM %d  MOVE %d  RANGE %d · %s" % [inspected.name, inspected.role, inspected.attack, inspected.armor, inspected.move, inspected.range, "Shaken" if inspected.cohesion == 1 else "Steady"]
-		_wrap(banner, Rect2(77, 168, 665, 46), 16, PAPER, 22)
 
 func _draw_impact():
 	var progress = _progress()
