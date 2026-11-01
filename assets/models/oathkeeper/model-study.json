@@ -1,0 +1,26 @@
+{
+  "status": "first_model_study_not_approved",
+  "units": "meters",
+  "blender": "4.5.4 LTS",
+  "reference": "assets/art/mechs/concepts/oathkeeper.png",
+  "body_meshes": 217,
+  "equipment": {
+    "sword": {
+      "socket": "hand_r",
+      "meshes": 9
+    },
+    "shield": {
+      "socket": "hand_l",
+      "meshes": 7
+    }
+  },
+  "checks": {
+    "equipment_separate_from_body": true,
+    "body_unchanged_when_gear_hidden": true,
+    "anatomical_hand_attachments": true,
+    "equipment_mesh_data_independent": true,
+    "replacement_probe_attaches_to_other_hand_without_body_changes": true
+  },
+  "rig_status": "rigid parts tagged for future bones; animation deferred until still review",
+  "runtime_integration": false
+}

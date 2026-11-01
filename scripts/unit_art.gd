@@ -4,6 +4,7 @@ const INK = Color("25323a")
 const STEEL = Color("9ba7a5")
 const LIGHT = Color("d4d9cc")
 const BRASS = Color("c7a565")
+const Mechs = preload("res://scripts/mech_art.gd")
 
 static func ellipse(c: CanvasItem, center: Vector2, radius: Vector2, color: Color):
 	var points = PackedVector2Array()
@@ -15,7 +16,7 @@ static func ellipse(c: CanvasItem, center: Vector2, radius: Vector2, color: Colo
 static func polygon(c: CanvasItem, points: Array, color: Color):
 	c.draw_colored_polygon(PackedVector2Array(points), color)
 
-static func draw_unit(c: CanvasItem, u: Dictionary, origin: Vector2, time: float, moving: bool = false, attack: float = 0.0, hit: float = 0.0, reduced: bool = false):
+static func draw_unit(c: CanvasItem, u: Dictionary, origin: Vector2, time: float, moving: bool = false, attack: float = 0.0, hit: float = 0.0, reduced: bool = false, presentation: Dictionary = {}):
 	var friendly = u.side == 0
 	var cloth = Color("35566b") if friendly else Color("8a4939")
 	var accent = Color("e0c584") if friendly else Color("d39365")
@@ -24,6 +25,18 @@ static func draw_unit(c: CanvasItem, u: Dictionary, origin: Vector2, time: float
 	var sway = 0.0 if reduced else sin(phase) * (2.0 if moving else 0.6)
 	c.draw_set_transform(origin)
 	ellipse(c, Vector2(0, 7), Vector2(39, 13), Color(0.09, 0.14, 0.12, 0.3))
+	if Mechs.has_art(u):
+		var pose = presentation
+		if pose.is_empty():
+			pose = {"state": "guard" if u.get("guard", false) else "idle", "progress": 1.0}
+			if hit > 0:
+				pose = {"state": "guard_hit" if u.get("guard", false) else "hit", "progress": hit}
+			elif attack > 0:
+				pose = {"state": "attack", "progress": attack}
+			elif moving:
+				pose = {"state": "walk", "progress": 0.0}
+		Mechs.draw(c, u, origin, time, pose, reduced)
+		return
 	if u.kind == "mech":
 		_mech(c, cloth, accent, phase, facing, moving, attack, hit, sway)
 	else:

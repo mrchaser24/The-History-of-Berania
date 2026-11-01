@@ -1,7 +1,10 @@
 # The History of Berania — Project Plan
 
 **Working subtitle:** Ironbound Crown  
-**Plan version:** 1.7 — restored story canon and solo fugitive opening  
+**Current mech production override — November 1, 2026:** The user rejected the generated cutout assemblies and adopted a faithful Blender source model, validated as a still before animation, then rendered into 2D sprites. Weapons and shields are interchangeable assets attached to reusable hand sockets. See `MEMORY.md` and `mech-art-direction.md`; older cutout-production guidance below is superseded for mechs. Runtime gameplay remains 2D.
+
+**Plan version:** 1.8 — refined story, two routes, banners, owned mechs, and shared inventory
+
 **Prepared:** November 1, 2026  
 **Reviewed:** November 1, 2026  
 **Status:** Short Godot prologue implemented and played; scoped automated QA passes; standalone export, fresh-player review, and measured performance gates remain open  
@@ -9,17 +12,19 @@
 
 This plan translates the stated game concept into an implementation roadmap. The latest user-authored story correction is authoritative. The missing design document may supply compatible details later, but cannot override that correction. Proposed technical choices, content limits, and acceptance criteria below are planning recommendations rather than previously settled design decisions. They become implementation defaults only when adopted in the decision register.
 
-**Story authority:** The user's latest November 1, 2026 correction supersedes the generic exile story and earlier unresolved-assassin/allegiance assumptions. The player is an archduke's son, promised to the princess and rightful heir; the concubine-born second son murders the Emperor, usurps the throne and imprisons her. The archduke dies securing his son's escape in a mech. Ten nobles secede, twelve join the usurper, and imperial forces hunt the penniless, solitary protagonist. The campaign builds toward rescuing the princess and restoring her throne and the empire. See [the canonical story brief](story-canon.md); enhancements and production proposals are labeled separately.
+**Story authority:** [Story canon revision 2](story-canon.md) records the user-established family tragedy, innocent prince's persecution, coup, father's sacrifice, solo Oathkeeper escape, ten independent breakaway factions/twelve initial loyalists, and permanent midpoint rescue-versus-crown decision. The restoration route makes the princess empress and the protagonist prince-consort; the other makes him emperor while she survives in exile. Both settle the imperial war. Names and supporting lore are labeled authored drafts.
 
 **Gameplay authority:** The user's subsequent November 1, 2026 gameplay request establishes turn-based hex-map travel, unobtrusive hex presentation, a Mount & Blade-like campaign, 2D battles visually inspired by Field of Glory II: Medieval, faction-specific units, trading, alliances, world-map fog of war, and village/caravan rescue events. The attached screenshot is a visual reference for readable terrain, settlements, and roads; its visible tile edges are not a requirement. The user's instruction to hide hexes takes priority. Exact rules, roster additions, and milestone limits below are recommendations, not extra user requirements.
 
-**Latest refinement:** The user adds Warhammer 40,000: Tacticus as another battle-style reference, asks for moving NPCs, sieges, war, and diplomacy, and wants the game to remain simplified. The second screenshot guides diplomacy presentation: a large character portrait over a location background, speaker name, and a lower dialogue box. Its setting, text, characters, and decorations are not Berania content or instructions. The recommendations below combine these references and retain earlier story/gameplay requirements.
+**Latest refinement — November 1, 2026:** Adopt [the campaign refinement](campaign-refinement.md): ordinary battles up to ten units per side and major battles up to fifteen; every deployed mech counts within the cap. Allied nobles provide campaign support; the protagonist, princess, and up to five companions are personal mech pilots. Add a simple two-color/one-emblem warband crest, persistent owned frames, shared workshop storage, fitted modules, and party equipment/trade inventory. Girls' Frontline 2: Exilium is the latest tactical reference, adapted to hexes and the established 2D presentation. Earlier Field of Glory/Tacticus and portrait-diplomacy references remain compatible supporting references. These are planned additions, not implemented features.
+
+**Document authority:** This file retains production history and milestone gates; story-canon.md controls plot and campaign-refinement.md controls the newly agreed campaign/equipment systems. Numerical prices, statistics, and exact scene content remain production/balance work. Existing prototype limits stay identified as staged limits, not the final campaign ceiling.
 
 **Art and animation authority:** The user's latest request adds movement, attacks, and other animation, retains the 2D requirement, and delegates art decisions to the assistant. The painted style and fixed camera below are selected under that delegation. Animation budgets and timing targets are implementation recommendations to validate in the prototype; they do not add real-time combat or new tactical resources.
 
 **Current implementation — prototype 0.1:** The user subsequently requested a full QA review followed by a prototype/short intro/demo in the existing Godot project. `scenes/main.tscn` now runs **Dawn at Greyford**: painted title, four short canon memories and portrait dialogue → a solo, zero-gold 30-hex travel slice with fog and two moving NPC markers → an animated three-versus-three defense → victory or free recovery → a saved return to the village. This bounded intro/travel integration precedes external M1 playtests under that request; it does not complete the full M2–M7 scope. See [the QA review and adopted rules](../qa/qa-review.md) and [launch/controls instructions](../README.md).
 
-**Evidence:** The 1.6 baseline passed 252 checks and a native round-4 victory with free repairs. Version 1.7 passes 260 checks (227 model/persistence/animation + 33 application flow), including intro navigation, zero-gold rewards and older-save preservation. Native review verified the four memories, pursuit dialogue and solo start; details are recorded in the QA report. A new-game victory now leaves 40 gold/1 trust. Older saves retain their existing resources. A data PCK exports and initializes with the matching engine; a standalone application is still unverified because export templates are absent. Keep milestone review gates separate from checked implementation tasks.
+**Historical implementation evidence (unchanged by this documentation revision):** The 1.6 baseline passed 252 checks and a native round-4 victory with free repairs. Version 1.7 passes 260 checks (227 model/persistence/animation + 33 application flow), including intro navigation, zero-gold rewards and older-save preservation. Native review verified the four memories, pursuit dialogue and solo start; details are recorded in the QA report. A new-game victory now leaves 40 gold/1 trust. Older saves retain their existing resources. A data PCK exports and initializes with the matching engine; a standalone application is still unverified because export templates are absent. Keep milestone review gates separate from checked implementation tasks.
 
 ## 0. Review findings and priorities
 
@@ -42,7 +47,7 @@ The original plan has a sound combat-first sequence and useful boundaries around
 
 ## 1. Project objective
 
-Build a small, single-player PC strategy RPG in which a hunted archduke's son escapes alone in a damaged mech, earns his first pay, recruits an army and noble allies, and returns to free the imprisoned princess, restore the rightful heir, and save Berania. He begins with no gold, troops, or secure home; the promised marriage and his father's sacrifice give the restoration a personal purpose.
+Build a single-player PC strategy RPG in which a hunted archduke's son escapes alone in damaged Oathkeeper, earns his first pay, recruits an army and political allies, and either rescues the princess to restore her throne or abandons that promise for his own crown. He begins with no gold, troops, or secure home. The full campaign settles Berania's civil war; the first implementation remains a small village-to-headquarters chapter. The promised marriage, shared childhood friendship with the prince, and father's sacrifice give its politics a personal purpose.
 
 Prove the early gameplay loop before building the full campaign:
 
@@ -63,13 +68,13 @@ The first playable chapter ends when the player earns permission to establish a 
 - **A changing world:** Caravans trade, patrols protect roads, bandits raid, and nobles travel or lead war parties. Fog limits current information. Village raids and caravan attacks invite intervention; later, war interrupts routes and armies threaten forts. The [Mount & Blade campaign-map reference](https://www.taleworlds.com/en/News/232) connects travel, trade, diplomacy, battles, and sieges; Berania uses a much smaller turn-driven model.
 - **Character-led diplomacy:** Meet a recognizable ruler in a portrait dialogue scene, hear their motive, choose from a few concrete proposals, and inspect terms before accepting. House identity and remembered choices give political actions personality.
 
-**Grid recommendation:** Use hexes in battles as well as on the world map, with no permanent battle grid. The user explicitly specified hex world movement; applying hexes to tactical battles is the proposed default for consistency. The two maps have different scales, costs, and rules even if they share coordinate helpers.
+**Grid direction:** Both campaign movement and tactical battles use hexes, with permanent outlines hidden by default. The latest request explicitly establishes hex tactics. The two maps have different scales, costs, and rules even if they share coordinate helpers.
 
 ### Simplification contract
 
 These are proposed production limits, not additional features to build:
 
-- **Control a warband:** One player army. Proposed chapter limits: 8 roster slots and 6 deployed entities; M1 stays at 3 versus 3. A formation occupies one slot and takes one turn regardless of its drawn soldiers. Later ordinary battles target at most 8 entities per side; excess strategic strength becomes reserves/auto-resolution, not a bigger tactical board by default.
+- **Control a warband:** One player army. The chapter may retain a staged 8-slot roster and 6 deployed entities; M1 stays at 3 versus 3. The adopted full-game limit is up to 10 commandable units per side in ordinary battles and 15 in major battles/sieges. A formation, cannon, or deployed mech occupies one slot and takes one activation. Stored frames consume none. Companions do not add free slots; their machines count within the limit.
 - **One understandable order:** Move, then attack or guard; one passive trait per unit at most. Add at most one special action per deployed entity after the base prototype works; it replaces the normal attack and is once per battle initially. Avoid ability bars, stacking status effects, and separate energy/heat resources.
 - **Few visible numbers:** Unit strength/health, attack, armor, move, and range; simple facing/cohesion indicators. Gold pays for cargo, recruitment, and repairs. Show trust/opinion only where a decision uses them. Defer wages, food, ammunition, and detailed settlement budgets until playtests demonstrate a need.
 - **Small world cast:** In the opening region, cap active NPC parties at one caravan, one patrol, one bandit party, and one visiting noble by M5, excluding the player. M7 permits one war party per pilot faction by temporarily assigning its existing patrol/noble party that role. Villagers and couriers may appear as flavor reports without simulated populations or extra pathfinding actors.
@@ -80,22 +85,22 @@ These are proposed production limits, not additional features to build:
 
 The first chapter proves a roaming warband and local consequences; the M7 frontier slice proves the requested war/siege experience. Both are required steps toward the intended game. Twenty-two nobles remain the story framework while only the current region's actors need active simulation.
 
-### Story foundation — the promise, the coup, and the imperial hunt
+### Story foundation — family tragedy, permanent choice, and two endings
 
-The [story canon](story-canon.md) records the polished backstory, dramatic progression, fixed facts, and remaining authored details. These are user-established events:
+The [story canon](story-canon.md) is authoritative; the full chronology and 22-house draft register live there.
 
-1. **Shared childhood and marriage promise:** The player is an archduke's son. He and the Emperor's daughter grow up happily together; their fathers promise their future marriage. The princess is first in line to the throne.
-2. **Murder and usurpation:** The Emperor's second son, born to a concubine, assassinates his father, seizes the throne, and imprisons the princess in a dungeon. His identity and responsibility are settled, not an assassination mystery.
-3. **The father's sacrifice:** The archduke dies holding off pursuit during the castle escape. He tells his son to save the princess and the empire. The player fights his way to a mech and escapes in it.
-4. **The political split:** Of the **22 major nobles, 10 secede and form their own factions; the remaining 12 join the new emperor as imperial loyalists**. Individual motives may vary; their initial allegiance does not. Independence does not automatically make a ruler the player's ally. Resolve the deceased archduke's house within the register without changing the 22 = 10 + 12 snapshot or counting him as a living loyalist.
-5. **The hunted beginning:** The empire pursues the player. He starts alone with only the damaged mech: no starting coin, household survivors, private army, or usable estate. Temporary Greyford defenders belong to their village. Work and trade fund the army he must build.
-6. **The restoration:** Rescue the princess, the true heir, and save the empire. The player's cause supports her claim; he does not become the rightful emperor simply through the betrothal.
+1. The archduke's son and eldest imperial daughter are already in love and welcome their fathers' marriage promise. The second prince is their close childhood friend. The first prince died before the coup; the eldest daughter is the lawful heir.
+2. The emperor secretly murders the second prince's mother and plans to kill the innocent prince out of paranoia. The archduke is kept in the dark. The prince strikes first and publicly justifies the coup as necessary.
+3. The prince imprisons his sister out of fear while remaining unable to kill her. He wrongly believes the archduke and protagonist helped persecute him; he wants the protagonist captured and executed.
+4. An imperial commander kills the archduke during the escape. The protagonist reaches Oathkeeper and escapes alone and penniless. A treacherous relative takes the duchy as one of the twelve loyalist seats; ten other houses become independent competing factions.
+5. A required investigation reveals the old emperor's crimes before the midpoint fork. It cannot depend on optional companions.
+6. As the player approaches the capital, three loyalist houses offer four veteran formations, an unassigned advanced frame, and gold in exchange for abandoning the princess. Accepting is an explicit permanent commitment to self-crowning. Refusing causes their elite force to attack, followed by a midpoint prison raid that frees her without conquering the capital.
+7. On restoration, the princess leads politically and can pilot a mech. On the dark route she organizes her own escape with another ally and survives in exile. In both routes the player must resolve the imperial war through diplomacy, submission, or conquest.
+8. The prince embraces the throne's magic-amplifying, addictive mechanism, refuses surrender, and dies fighting. Restoration ends with empress/prince-consort marriage and destruction of the mechanism; self-crowning retains the mechanism in the draft dark ending. Its possible influence on the old emperor remains uncertain.
 
-**Recommended delivery:** Four brief illustrated memories establish childhood → coup → sacrifice/escape → division/hunt. Mira then offers the first paid village defense and free essential repairs. Keep a single wanted label and short pursuit reports initially; later add one authored imperial encounter using an existing party slot, with clear withdrawal/recovery. Do not add a heat meter, starvation, constant real-time chase, or extra world simulation. The current demo tells the castle escape and imperial pursuit; neither is a new playable system yet. Greyford's patrol is local, not an imperial hunter.
+**Delivery and production boundary:** Retain the four-memory illustrated opening and Greyford's temporary local defenders. Runtime narration still reflects revision 1 in places; this document update does not implement revised dialogue, a playable castle escape, imperial hunting AI, the rescue, or the endings. Greyford's roadwardens remain local defenders. Preserve free essential recovery, old-save resources, and the small opening slice.
 
-**Character guidance:** Give the princess her own voice and choices as the story expands. The childhood bond and promised marriage motivate the rescue; the restoration also needs her leadership and the consent/support of people beyond the two families. Her exact actions, the usurper's motive, the assassination method, and why she remains alive are still to be authored. Do not make the identity of the murderer or the twelve loyalists unresolved again.
-
-**Campaign progression:** Survival and first pay → a foothold and formal soldiers → negotiated/conquered support → resistance to imperial forces → princess rescue and restoration. Earlier noble-fate choices affect support and opposition. Freeing her does not automatically reunify the ten breakaway domains. The chapter remains the bounded village-to-headquarters arc; the full rescue comes later.
+**World and characters:** Medieval magitech supports rare mechs while early scarce guns coexist with traditional arms. The princess is compassionate and politically sharp. All five optional full-campaign companions are mech pilots; the chapter stages only two. Noble support comes through houses, resources, and armies rather than 1–3 recruitable noble pilots in the player's tactical roster. Draft names and ages remain distinct from direct user decisions.
 
 ### Noble interactions and consequences
 
@@ -207,14 +212,22 @@ Represent all six tactical facing directions consistently in the 2D artwork. Reu
 
 ### First playable chapter additions
 
-- Two named companions with simple abilities and short questlines.
+- Two named companion mech pilots with simple abilities and short optional questlines; deployment requires an assigned available frame. The full campaign permits up to five companions.
 - One recruitable noble ally with a short questline and one tangible benefit, such as access to trained soldiers.
 - One limited alliance agreement with that ally: explicit parties, non-aggression, access/support terms, and a visible status. Allied territory remains independently owned.
 - A reusable portrait dialogue screen for greetings, proposals, replies, and agreement review, using a few expressions and shared location backgrounds.
-- A simple headquarters menu supporting the existing party loop.
+- A simple headquarters menu supporting the existing party loop, warband naming, and a two-color/one-centered-emblem crest creator.
 - An introductory escape sequence using dialogue and the existing combat systems where practical.
 
 The core MVP and these additions together form the first playable chapter. Companions and noble recruitment remain explicit milestone work so they do not block initial combat validation.
+
+### Banner, garage, and inventory refinement
+
+Follow [campaign-refinement.md](campaign-refinement.md) for the complete adopted behavior. M3 proves owned frame/equipment instances, shared workshop inventory, pilot assignment, repairs, compatible weapon/shield fitting, a small module/refit selection, cargo, and validated transactions. Default fittings are two weapon mounts and two module slots; two-handed equipment uses both mounts. Physical body-part assembly remains deferred.
+
+M5 introduces the personal warband banner at headquarters. Use two colors and one centered preset emblem, with cosmetic edits later. It appears on campaign markers, standards, owned sites, diplomacy, and designated mech panels without changing house identity or approved body appearance.
+
+Reserve machines and armory equipment are accessible at any friendly workshop, off-map, without cargo or deployment cost. Trade goods remain carried cargo with capacity. Quest items are protected. No individual human armor/boot/helmet inventory is added. Frame swapping and upgrades must not bypass approved art/loadout support.
 
 ### Deferred until the first chapter is proven
 
@@ -229,16 +242,17 @@ The core MVP and these additions together form the first playable chapter. Compa
 - Global dynamic pricing, a production-chain economy, naval trade, automated multi-route management, coalition wars, and a general-purpose political simulation. Prove one local route and one authored alliance first.
 - Mod support, cloud saves, achievements, controller support, and localization beyond English.
 
-**Production constraints:** No multiplayer, real-time combat, open-world 3D environments, fully animated 3D mechs, fully voiced dialogue, or individual villager simulation.
+**Production constraints:** No multiplayer, real-time combat, open-world 3D environments, runtime fully animated 3D mechs, fully voiced dialogue, or individual villager simulation. Offline Blender source models/animations rendered into 2D sprites are now authorized by the user's latest art decision.
 
 ### Unit roster — formations and single entities
 
-The user's nine starting archetypes are enough for an initial combined-arms roster. More tactical depth should first come from strengths, counters, terrain, formation condition, and faction doctrine. Do not implement every archetype for every faction at once. **Multiple-unit** means several visible soldiers/horses in one commandable formation; **single-unit** means one commandable cannon or mech. Neither requires controlling each crew member or soldier separately.
+The ten planned core archetypes, including the newly requested mage circle, are enough for an initial combined-arms roster. More tactical depth should first come from strengths, counters, terrain, formation condition, and faction doctrine. Do not implement every archetype for every faction at once. **Multiple-unit** means several visible soldiers/horses in one commandable formation; **single-unit** means one commandable cannon or mech. Neither requires controlling each crew member or soldier separately.
 
 | Requested archetype | Battlefield representation | Proposed role and limitation |
 | --- | --- | --- |
 | Sword infantry | Multi-soldier formation | Flexible close combat and village fighting; vulnerable to concentrated fire and heavy frontal armor |
 | Gunner infantry | Multi-soldier formation | Ranged volleys supporting the line; vulnerable when caught in melee; line of sight matters |
+| Mage circle | Multi-mage formation, typically five mages | Magical support or ranged effects; exact abilities and counters require a small prototype before expansion |
 | Mobile cannon | Single cannon with decorative crew | Slow redeploying fire support and a possible anti-mech weapon; exposed to flanking; move-or-fire proposed when introduced |
 | Shield-and-lance infantry | Multi-soldier formation | Defensive line and braced anti-charge role; slow, vulnerable to rear attacks; treat as spear/lance foot troops rather than mounted lancers |
 | Sword-and-gun horsemen | Multi-rider formation | Mobile flank attacks and short-range shooting; choose sword or gun attack for the activation; weak into prepared lance formations |
@@ -257,11 +271,11 @@ The user's nine starting archetypes are enough for an initial combined-arms rost
 | Engineer/sapper team | Small formation | Fieldworks, obstacle removal, and later siege interaction; avoid free in-combat full repairs | Military expansion |
 | Banner/command support | Small formation or attached leader | Morale support with an opportunity cost in deployment; use an attached upgrade first if a full unit lacks a meaningful role | After morale playtests |
 
-Use roughly **9 core + up to 5 optional archetypes** as a long-term role catalogue, not a chapter-one content target. The first chapter uses sword and gunner formations, the starter militia mech, and three enemy roles. Add shield-lance troops, horsemen, and a cannon in the first post-M6 roster expansion; test the remaining mech roles one at a time. An early militia frame is a starter exception, not a promise of a tenth fully developed archetype.
+Use roughly **10 core + up to 5 optional archetypes** as a long-term role catalogue, not a chapter-one content target. The first chapter uses sword and gunner formations, Oathkeeper, staged companion frames, and three enemy roles. Add shield-lance troops, horsemen, and a cannon in the first post-M6 roster expansion; test the remaining mech roles one at a time. Oathkeeper's starting identity is fixed; its current prototype statistics do not make its approved appearance provisional.
 
 ### Faction roster identity
 
-For each playable faction, author a roster entry linking its own unit definitions, recruitment source, visual language, preferred roles, and one weakness. Not every faction receives all nine archetypes. Distinguish related noble houses with heraldry and selected variants while sharing a regional military tradition; 22 nobles do not require 22 completely separate sets of mechanics.
+For each playable faction, author a roster entry linking its own unit definitions, recruitment source, visual language, preferred roles, and one weakness. Not every faction receives all ten core archetypes. Distinguish related noble houses with heraldry and selected variants while sharing a regional military tradition; 22 nobles do not require 22 completely separate sets of mechanics.
 
 The following are **unnamed doctrine examples**, not established faction lore:
 
@@ -295,9 +309,9 @@ The opening village-defense mission remains retryable and its essential services
 
 **Alliance scope:** M5 demonstrates one negotiated non-aggression/access/support pact with the recruitable noble's house or faction. Record who agrees, the granted benefit, and whether it is active or ended; refusal leaves the required story path available. Full campaign diplomacy adds mutual defense obligations, war/peace, breach penalties, and renegotiation after M6. Alliance, trade agreement, personal friendship, joining the player's faction, and territory ownership remain distinct states.
 
-### Compact battles — combining the two references
+### Compact battles — current tactical reference and combined arms
 
-Use a small hex battlefield viewed from a fixed elevated angle, rendered with 2D sprites and depth sorting. Several infantry sprites form one readable block; a cannon or mech is one larger silhouette. At normal zoom, identify weapon, faction, facing, condition, and selection without opening a panel. Keep banners above overlapping artwork and movement overlays below units. Foreground scenery should fade or become selectable through when it obscures a valid destination.
+Use a small hex battlefield viewed from a fixed elevated angle, rendered with 2D sprites and depth sorting. Girls' Frontline 2: Exilium now guides cover, terrain, targeting, and distinct abilities, adapted to hexes; the earlier formation/readability references remain useful. Target up to 10 units per side ordinarily and 15 in major battles, while retaining smaller staged encounters. Several infantry sprites form one readable block; a cannon or mech is one larger silhouette. At normal zoom, identify weapon, faction, facing, condition, and selection without opening a panel. Keep banners above overlapping artwork and movement overlays below units. Foreground scenery should fade or become selectable through when it obscures a valid destination.
 
 Each encounter should ask one clear question: hold the village, keep the caravan alive, break a bandit line, or capture the fort courtyard. Proposed duration is 5–10 minutes for ordinary encounters and 10–15 minutes for the first siege, subject to playtests. Use a short deployment preview, a clear objective header, and a quick results screen. Automatic camera motion and hit effects must not hide whose turn it is.
 
@@ -471,12 +485,13 @@ Define hex line-of-sight edge/tie behavior, facing-sector mapping, strength/dama
 **Depends on:** M2.
 
 - [ ] Expand M2's placeholder resource/reward handling into gold, experience, inventory, and validated transactions.
-- [ ] Add mech repairs, equipment changes, and a small upgrade selection.
+- [ ] Add owned frame/equipment instances, shared friendly-workshop storage, one-pilot/one-frame assignment, repairs, and a small compatible fitting/refit selection. Preserve Oathkeeper when another frame is assigned.
 - [ ] Give at least one upgrade a tactical effect rather than only a stat increase.
 - [ ] Optionally prototype one attack-replacing special for a starter unit; retain it only if players understand its use without extra resource/status systems.
 - [ ] Add two infantry recruitment options, a party limit, and a roster screen.
 - [ ] Recruit infantry as small formation instances with troop counts; retain one activation per formation. Give the two initial faction rosters distinct names, silhouettes, and at least one tactical difference while sharing role logic.
-- [ ] Add settlement buy/sell menus with a small goods list, posted prices, inventory/cargo capacity, and validated transfers; keep trading separate from equipment upgrades.
+- [ ] Add settlement buy/sell menus with a small goods list, posted prices, cargo capacity, protected quest items, and validated transfers; keep workshop reserves separate from carried trade goods.
+- [ ] Add take/leave battle loot, explicit cargo overflow, last-usable-frame sale protection, and single-claim frame/equipment rewards. Use only art-supported loadouts.
 - [ ] Set deployment capacity separately from roster capacity, validate mission restrictions, and ensure mandatory battles remain possible with the starter force.
 - [ ] Add basic unit experience progression; defer the full five-rank promotion tree.
 - [ ] Extend M2 persistence into one campaign slot with manual saving, automatic battle-boundary and End Turn checkpoints, schema/build versions, a last-good backup, and validated safe replacement.
@@ -516,7 +531,7 @@ Define hex line-of-sight edge/tie behavior, facing-sector mapping, strength/dama
 **Depends on:** M4.
 
 - [ ] Expand the implemented memory intro into the chapter's authored story delivery: shared childhood/betrothal, second son's murder and usurpation, princess's imprisonment, father's sacrifice, mech escape, ten secessionists/twelve loyalists and imperial hunt. Culpability and starting allegiance are fixed; optional playable escape work must reuse combat and remain separately scoped.
-- [ ] Add two companions, each with one distinctive benefit and a short questline.
+- [ ] Add two companion mech pilots, each with one distinctive benefit, a short optional questline, and an available-frame deployment requirement. Stage extra approved frames only after visual and ownership checks.
 - [ ] Add a minor noble or authorized house representative as the introduction to political recruitment; establish whose pact they can negotiate and what support they control.
 - [ ] Use that character as the single recruitable noble ally, with an explicit recruitment condition and a lasting benefit; do not add a second introduction character by accident.
 - [ ] Keep companion membership separate from noble-house allegiance in data and UI.
@@ -526,7 +541,7 @@ Define hex line-of-sight edge/tie behavior, facing-sector mapping, strength/dama
 - [ ] Let that noble travel on a short visible schedule and offer the same conversation through an audience at their known settlement, so movement cannot permanently hide a quest contact.
 - [ ] Let the one noble recruitment arc introduce the player's cause and a concrete reason to support it within the imperial succession crisis; do not require the entire 22-noble roster to be implemented.
 - [ ] Let noble support improve the headquarters reward or services; keep headquarters permission obtainable through the required village-trust path unless a different dependency is explicitly adopted.
-- [ ] Add a small headquarters menu for recruitment, roster review, repairs, and preparation.
+- [ ] Add a small headquarters menu for recruitment, roster review, repairs, preparation, warband naming, and the two-color/one-centered-emblem crest creator. Propagate heraldry consistently and keep it cosmetic.
 - [ ] Review one polished battle vignette, then apply the selected painted 2D style consistently across the chapter's units, map, UI, portraits, animation, and first-pass audio. Record the beauty/readability gate evidence before expanding final assets.
 
 **Done when:** The player can finish the escape-to-headquarters arc, recruit both companions and secure the noble alliance on a completionist route, understand their different roles, and save/load the resulting state. The agreement grants its stated benefit without transferring territory. A separate run that skips optional ally quests must still reach the chapter ending.
@@ -577,7 +592,8 @@ Build these systems as their milestone needs them. The list describes responsibi
 | World map | M2 | Hidden hex terrain, locations, movement budgets, exploration/visibility, travel, encounter triggers |
 | NPC party jobs | M2 movement; M4 consequences; M7 war | Party IDs, owners, destinations, jobs, strength, contact reservations, retreat and bounded recovery |
 | Campaign state | M2 | Turn number/resolution state, party, world progress, resources, known news, and persistent outcomes |
-| Inventory and equipment | M3 | Owned items, loadouts, repair and upgrade transactions |
+| Inventory, garage, and equipment | M3 | Owned frame/equipment instances, shared workshop reserves, pilot assignment, mount/module compatibility, repairs/refits, and validated transactions |
+| Personal banner | M5 | Warband name, two colors, centered preset emblem, shared heraldry presentation, and cosmetic edits |
 | Recruitment and progression | M3 | Roster, party limits, experience, and unit advancement |
 | Markets and cargo | M3 | Goods, posted prices, cargo capacity, validated buy/sell transfers |
 | Trade routes and world events | M4 | Agreements, route paths, caravan instances, dispatch/delivery transactions, raid/ambush states and deadlines |
@@ -592,7 +608,8 @@ Build these systems as their milestone needs them. The list describes responsibi
 - Keep static content definitions separate from mutable campaign and battle state.
 - Treat definition Resources as read-only templates; Godot reuses loaded Resources, so runtime health, injuries, and equipment ownership need independent per-instance state. See [Godot Resources](https://docs.godotengine.org/en/stable/tutorials/scripting/resources.html).
 - Reference content through stable IDs so saves survive routine content edits.
-- Give individual recruited units and owned equipment their own instance IDs, separate from their shared definition IDs.
+- Give individual recruited units, mech frames, and owned equipment their own instance IDs, separate from their shared definition IDs. Keep hull condition, permanent refits, removable modules, weapon/shield fittings, and pilot assignment distinct. Battle setup validates a deployment snapshot; stored frames do not count as deployed units.
+- Persist the warband's name and crest, shared garage/armory, cargo, quest items, claimed asset rewards, and eventual permanent story-route choice. Introduce a versioned migration from the current schema 1 only when implementing these systems; preserve existing gold/progress and map the old mech-health value onto one Oathkeeper instance.
 - A formation instance owns faction/unit definition IDs, current/max troop count, experience, injury state, and equipment; a single entity owns hull health. Battle state adds facing, actions, and cohesion. Decorative troop sprites never become separate campaign units. Record routed/surviving troops and recover morale at a documented campaign boundary.
 - Give trade agreements, routes, caravans, events, and payments stable IDs. Caravan state includes route/progress hex, cargo manifest, health, and any active ambush. Event state includes its target, status, deadline, objective, and outcome. Persist these together with the turn and any resolved transactions.
 - NPC parties reuse a small job state record, not a manager per party type. Persist destinations, strength, home, recovery cooldown, and pending contact reservations. Store the last committed campaign turn so jobs cannot advance twice after interruption.
@@ -644,7 +661,7 @@ Prepare only the content required by the next milestone.
 
 | Content | Initial target | Notes |
 | --- | --- | --- |
-| Starting mech | 1 frame | Damaged walker seized during the castle escape; reuse existing combat frame and repair/progression arc |
+| Starting mech | 1 frame | Damaged Oathkeeper seized during the castle escape; retain its approved identity, owned instance, and repair/progression arc |
 | Weapons and upgrades | 2 weapon options; up to 3 upgrades | Reuse basic attacks; at least one option changes range, movement, or another tactical choice |
 | Recruitable infantry | 2 roles | Sword and gunner formations; small faction variants using shared logic |
 | Basic enemy roles | 3 | Include the tournament opponent in this budget; reuse the militia frame for an enemy mech |
@@ -664,9 +681,11 @@ Prepare only the content required by the next milestone.
 | Diplomacy presentation | 1 reusable screen; 1 noble portrait initially | Shared painted background, nameplate/crest, 2–4 choices, terms panel; small blink/breathing loop and up to three expressions with static fallback |
 | Frontier pilot after chapter | 2 NPC factions; 1 fort; 1 assault layout | M7; one active war/siege and short authored peace/surrender branches |
 
-**Full-campaign political register:** Maintain 22 major-noble entries, marking the 10 initial secessionists and 12 initial imperial loyalists aligned with the usurper. Record ruler title, house, domain, initial faction/allegiance, motive, invitation terms, and available successor outcome. Names and details can remain placeholders until needed. Keep noble counts separate from faction counts: independent domains may later form coalitions or change allegiance. Resolve the deceased archduke's house, the protagonist's dispossessed claim and the recruitable noble within that register without changing its 22 = 10 + 12 alignment snapshot. The dead father is not an active loyalist or an extra twenty-third ruler.
+**Full-campaign political register:** Use the 22-house draft table in [story-canon.md](story-canon.md): ten independent breakaway factions and twelve initial loyalists. Valcrest's seat is held by the protagonist's treacherous uncle; Rothmar, Vaust, and Merrow are the three bargain-makers within the twelve. House names/motives are authored drafts; full ruler biographies, domains, and succession details remain content work. Keep ruler fate, house allegiance, faction membership, and territorial ownership distinct.
 
-Maintain a small content register listing each item's ID, milestone, required assets, implementation status, and completion condition. Track external art, fonts, audio, and plugins with their origin, license, and required attribution. Include engine attribution in distributed builds according to [Godot's published guidance](https://godotengine.org/license/). Do not expand the roster to fill the larger world before the chapter is tested.
+**Full-campaign companion target:** Up to five mech pilots, with draft concepts for Mira Vale, Tomas Flint, Ilyan Reed, Sera Vey, and Dorian Ash. Their optional quests cannot gate the investigation, headquarters, permanent branch, or final recognition. The first chapter still stages two companions.
+
+
 
 ### Required progression and optional content
 
@@ -719,7 +738,7 @@ Use lightweight automated checks where rules are easy to break, and playtests fo
 
 Milestone completion requires both its stated acceptance criteria and a runnable build. Do not treat a list of implemented systems as evidence that the chapter is enjoyable.
 
-### Plan coverage and consistency audit — version 1.7
+### Plan coverage and consistency audit — version 1.8
 
 This is a **planning audit**, not evidence of implemented or playtested gameplay. Every requested feature below has a design description, a production stage, and a verification path. Later-stage features remain part of the intended game; they are not silently removed to keep the opening chapter small.
 
@@ -749,6 +768,11 @@ This is a **planning audit**, not evidence of implemented or playtested gameplay
 | Corrected backstory and restoration goal | Archduke's son/princess bond and betrothal; second son's murder/coup; dungeon; father's sacrifice; seized mech; solo zero-gold start; 10 secessionists/12 loyalists; imperial hunt | Four-memory demo intro and zero-gold flow verified; full pursuit, rescue and restoration remain later campaign content |
 | Prior conquest, custody, execution, invitation choices | Noble consequence table; M7 minimal custody; later authored ruler-fate branches | Post-M6 political implementation and save/progression checks |
 | Dependable saves and recovery | Atomic turn/encounter/agreement commits, backups, free essential recovery | M2–M7 persistence and zero-gold checks |
+| Refined family tragedy and two routes | Required evidence, permanent bargain, midpoint rescue, independent escape/exile, final refusal to surrender | Story canon; full-campaign branch/recognition checks |
+| Personal banner | Two colors, one centered preset emblem, warband name, shared crest rendering | M5 headquarters and heraldry propagation |
+| Owned mechs and workshop fitting | Shared reserves, purchased/gifted frames, pilot assignment, weapons/shields, modules/refits | M3 transactions, compatibility, art support, and save migration |
+| Party inventory | Shared armory, carried cargo, protected quest items, take/leave loot | M3 capacity/ownership/reward/recovery checks |
+| Final tactical scale and hero roles | 10 ordinary/15 major; each mech counts; nobles support the campaign; companions pilot | Staged deployment and roster expansion |
 
 **Cross-system conflicts resolved in this revision:** NPCs move only on End Turn, not during dialogue or battles; declarations warn before attacks; peace cancels incompatible queued actions; trade routes can be known while unseen caravans remain hidden; a reserved ambush blocks delivery; rescue and delivery pay through separate one-time transactions; a traveling noble also offers a settlement audience; clearing the bandit camp does not delete the optional authored rescue; a captured fort cannot delete the chapter's required services; and mid-battle loading restarts from the checkpoint rather than partially committing gate/fort changes.
 
@@ -794,17 +818,18 @@ This is a **planning audit**, not evidence of implemented or playtested gameplay
 - [ ] Movement and action limits, footprint, line of sight, facing sectors, damage/armor/guard, troop-strength conversion, cohesion/routing, terrain effects, and deployment.
 - [ ] Validate the selected fixed elevated 2D view, representative formation sprite count/scale, and temporary overlays with hex outlines hidden; do not reopen the art direction as an undecided feature.
 - [ ] Measure starter rig/clip production cost, six-facing reuse, animation timing, impact cues, speed/skip cleanup, and reduced-motion behavior.
-- [ ] Adopt/revise the proposed 8-slot roster, 6-entity chapter deployment, later 8-per-side ceiling, and one passive/one special-action limit.
+- [ ] Validate staged chapter roster/deployment limits and the one-passive/one-special-action approach; retain the adopted final 10-per-side ordinary and 15-per-side major battle caps.
 - [ ] Casualty/recovery policy for soldiers, companions, and protagonist, needed before battle-result integration.
 - [ ] Input method, UI scale, minimum supported resolution, reference machine, and performance target.
 
 ### Before the chapter is content-complete
 
-- [ ] Player name/customization policy, noble house name, and neighboring nation's name.
-- [ ] Princess's personality, agency, and role in the restoration.
-- [ ] Usurper's motivation and the early evidence of it.
-- [ ] Emperor's name and assassination method; timing/details of the castle escape and why the princess is kept alive. The second son's responsibility, usurpation, imprisonment, and father's sacrifice are fixed.
-- [ ] Prevalence of mechs and relative technological levels.
+- [x] Player-named male protagonist with fixed history/romance and customizable appearance; draft house Valcrest.
+- [x] Compassionate, politically sharp princess; restoration leader and deployable mech pilot.
+- [x] Prince initially strikes to survive unjust persecution; fear and addiction to authority keep him ruling.
+- [x] Princess kept alive because he cannot kill his sister; father innocent of the persecution.
+- [x] Rare military mechs and early scarce guns within medieval magitech.
+- [ ] Finalize draft names/ages, exact assassination methods, scene dialogue, and neighboring geography without reopening settled plot decisions.
 - [ ] Party/roster capacities, mission restrictions, starting economy, and exact free-recovery health/injury rules.
 - [ ] Noble ally identity, motivation, recruitment terms, and contribution.
 - [ ] How companion and noble quests fit alongside the village-trust milestone.
@@ -823,23 +848,30 @@ Maintain a decision register in this plan or a linked file: **ID, decision, adop
 | --- | --- | --- | --- | --- |
 | G01 | Turn-based campaign with hex movement | Established by user | Requested campaign model | M2 onward |
 | G02 | Hide permanent world hex outlines; illustrated terrain and temporary travel previews | Established presentation goal; overlay design proposed | User wants an unobstructed map | M2 onward |
-| G03 | 2D formation-battle presentation referencing Field of Glory II: Medieval and Warhammer 40,000: Tacticus | Established references; compact readable battle blend proposed | Requested battlefield look and latest example | M1 onward |
+| G03 | 2D formation-battle presentation referencing Field of Glory II: Medieval and Warhammer 40,000: Tacticus | Established supporting references; latest tactical direction recorded in G15 | Requested formation appearance and readability | M1 onward |
 | G04 | Hex tactics, side turns, facing, and compact cohesion rules | Adopted for prototype 0.1; values recorded in QA review | Consistent movement and a small combined-arms prototype | M0–M1 |
-| G05 | Faction-specific formations and single cannon/mech entities; nine requested archetypes | Established direction; exact statistics/content staging proposed | User's roster and faction requirements | M1–M3, expansion |
+| G05 | Faction-specific formations and single cannon/mech entities; ten core archetypes including mages | Established direction; exact statistics/content staging proposed | User's roster and faction requirements | M1–M3, expansion |
 | G06 | Settlement trade, agreed routes, visible traveling caravans, and world fog | Established by user; lifecycle/turn values proposed | Connect travel, economy, and discovery | M2–M4 |
 | G07 | Village and caravan rescue events | Established by user; authored first missions proposed | Make intervention part of the campaign loop | M4 |
 | G08 | Alliances distinct from conquest and faction membership | Established feature; limited first pact proposed | Demonstrate diplomacy without requiring the full political simulation | M5, expansion |
-| G09 | Scouts, pikes, shock cavalry, engineers, and command support | Recommended additions, not adopted roster commitments | Fill specific tactical gaps after testing the core nine roles | After M6 |
+| G09 | Scouts, pikes, shock cavalry, engineers, and command support | Recommended additions, not adopted roster commitments | Fill specific tactical gaps after testing the core roles | After M6 |
 | G10 | Moving NPC parties, wars, sieges, and expanded diplomacy | Established by user; small party/job model and one-fort pilot proposed | A more alive campaign | M2–M5 movement; M7 conflict |
 | G11 | Portrait/background/nameplate/dialogue-box diplomacy based on the supplied screenshot | Established presentation preference where feasible; choice/terms flow proposed | Make ruler interactions personal and readable | M5 onward |
 | G12 | Keep the game simplified | Established by user; numerical limits proposed | Constrain controls, party count, politics, economy, and siege complexity | All milestones |
 | G13 | Animate movement, attacks, reactions, travel, and supporting scenes | Established by user; clip matrix, timings, and shared-rig budget proposed | Make the 2D game feel responsive and alive | M1–M5, M7 and roster expansion |
 | G14 | Painted storybook-medieval/industrial art, fixed elevated 2D battles, painterly portraits and parchment/navy/brass UI | Selected by assistant under the user's delegated art choice | Cohesive, beautiful, readable 2D presentation | M0 style sample; M5–M6 art/animation gate |
+| G15 | Hex tactics referencing Girls' Frontline 2: Exilium; 10 ordinary/15 major units per side | Established by user | Latest tactical direction; smaller prototypes remain staged | Combat expansion |
+| G16 | Allied nobles provide campaign support; protagonist/princess/up to five companions are personal mech pilots | Established by user | Separate house politics from personal pilot recruitment | M5 and campaign expansion |
+| G17 | Two-color/one-centered-emblem personal banner | User-selected scope; headquarters timing is adopted plan default | Establish a readable warband identity | M5 |
+| G18 | Persistent frames with fitted equipment/modules, shared friendly-workshop garage | Established by user; two mounts/two module slots are plan defaults | Buy, receive, retain, swap, and upgrade machines | M3 and frame expansion |
+| G19 | Shared party gear and trade goods; no personal human equipment slots | User-selected scope | Meaningful equipment and commerce without individual soldier outfitting | M3 |
+| G20 | Permanent midpoint rescue/crown bargain and two endings | Established by user; authored names and scene details remain draft | Give the restoration a consequential personal choice | Full campaign |
 
 ### Before the full campaign
 
-- [ ] Names/titles, houses, and domains of the 22 major nobles; identify the 10 initial secessionists and the 12 initial loyalists serving the usurper.
-- [ ] The deceased archduke's house and the protagonist's lost claim within the 22-noble register; first recruitable noble's place in that count.
+- [ ] Finalize ruler names/titles, biographies, and domains for the draft 22-house register; preserve its established ten/twelve opening split.
+- [x] The deceased archduke's seat passes to a treacherous relative among the twelve loyalists; the three bargain-makers also belong to the twelve.
+- [ ] Choose the first chapter's recruitable noble from the 22-seat register and author their pact terms.
 - [ ] Initial faction groupings, regional boundaries, and major story battles; do not assume each noble always equals one faction.
 - [ ] Faction-specific roster assignments, upgrade paths, and which optional archetypes earn a place through tactical testing.
 - [ ] Mutual-defense obligations, alliance breaches, diplomatic access, trade disruption during war, and the extent of shared intelligence.
@@ -848,24 +880,25 @@ Maintain a decision register in this plan or a linked file: **ID, decision, adop
 - [ ] M7 pilot factions/rulers, fort layout, siege readiness/capture timing, strength-based surrender conditions, and bounded off-player losses/recovery.
 - [ ] Settlement acquisition rules and strategic economy depth.
 - [ ] Council decisions, loyalty consequences, and foreshadowed betrayal.
-- [ ] Authored relationship choices and final settlement within the established goal of freeing the princess and restoring the true heir; any alternate campaign goal needs a new explicit story decision.
+- [x] Two main routes: midpoint rescue/restoration and permanent abandonment/self-crowning; the princess independently escapes into exile on the latter.
+- [ ] Author route scenes, the independent escape, the final throne confrontation, and recognition/succession outcomes while preserving those two endings.
 
 ## 10. Expansion roadmap after validation
 
 Proceed in this order, re-estimating scope at each step:
 
-1. **M7 living frontier:** Deliver the defined two-faction, one-fort war/peace/siege slice using the existing party jobs, portrait diplomacy, and tactical rules. This is the first proof of strategic conflict; do not require a construction economy or all nine unit roles before attempting it.
+1. **M7 living frontier:** Deliver the defined two-faction, one-fort war/peace/siege slice using the existing party jobs, portrait diplomacy, and tactical rules. This is the first proof of strategic conflict; do not require a construction economy or all ten core unit roles before attempting it.
 2. **Local command and roster growth:** Expand the captured fort or one settlement with a few menu upgrades, training, and promotions. Add shield-lance formations, sword-and-gun horsemen, and a mobile cannon, then specialized mechs individually. Extend the proven route to a small regional network and bounded repeatable raids. Add upkeep only if playtests identify a useful decision it supplies. Every added role needs a counter.
 3. **Regional power:** Expand the pilot rulers' motives, invitations before war/after capture, domain conquest, imprisonment, execution, and authored successors. Extend the proven alliance/peace dialogue with mutual defense and breach terms. Persist ruler fate, faction allegiance, territory control, and relationship changes. Verify diplomacy and conquest both support progress and removing a ruler cannot block the campaign. Expand toward the 22-noble register only after this works; establish the Council of Lords when meaningful choices exist.
 4. **Military campaign:** Add more authored fortress layouts and garrisons using the existing siege loop. Connect conquered domains and allied support to political outcomes; retain tactical entity caps and one player army unless testing supports a deliberate revision.
-5. **Return to Berania:** Build the liberation arc, princess rescue, imperial commanders, and confrontation with the usurper; let earlier alliances, conquests, and ruler fates affect available support and opposition.
-6. **Resolution:** Connect major choices, surviving rulers, house support, and the treatment of defeated nobles to a small set of endings. Define whether the final settlement reunifies the empire, preserves independent domains, or permits another authored arrangement.
+5. **Midpoint bargain and rescue:** Build the required investigation, three-house offer, permanent route commitment, elite-force opposition on refusal, and capital-prison raid. Rescuing the princess does not capture the capital. On acceptance she later escapes independently into exile.
+6. **Imperial settlement:** Continue the civil war on either route, obtain recognition from every surviving major house, and stage the prince's final refusal to surrender and death in battle. Restoration ends in empress/prince-consort marriage and destruction of the throne mechanism; self-crowning leaves the princess in exile and retains the mechanism in the draft ending.
 
-The five story chapters remain the narrative framework: **The Exile → The Unknown Noble → A Banner Reborn → The Gathering Storm → Return to Berania.** Milestones describe production order and do not need to match chapter boundaries.
+The five-act narrative is **The broken promise → A banner without a country → The price of a crown → Restoration or dominion → The throne's last prisoner**. Earlier chapter labels are superseded pacing proposals; production milestones need not match act boundaries.
 
 ## 11. Project handoff and first work session
 
-Keep this plan at `plan/initial-plan.md`. Add the source design document to `plan/` using its cited filename and verify its version before story production. Reconcile it with the user's later story and gameplay updates: the assassinated sovereign is the emperor, the political split is 10 secessionists plus 12 usurper loyalists, the archduke's son starts alone/penniless in the seized mech and is hunted, the princess is the imprisoned true heir, and the second son/father's sacrifice are fixed, and the campaign is turn-based with hidden hex movement, compact 2D formation battles, faction units, moving NPCs, fog, trade routes, rescue events, portrait diplomacy, war, and sieges. Preserve the simplification contract and the M7 conflict boundary. Keep the plan updated as decisions are made, with a brief record of scope changes and milestone completion.
+Keep this roadmap at `plan/initial-plan.md`, read `plan/campaign-refinement.md` for the new systems, and use story canon revision 2 for plot. Add the source design document to `plan/` using its cited filename and verify its version before story production. Reconcile it with the user's later story and gameplay updates: the assassinated sovereign is the emperor, the political split is 10 secessionists plus 12 usurper loyalists, the archduke's son starts alone/penniless in the seized mech and is hunted, the princess is the imprisoned true heir, and the second son/father's sacrifice are fixed, and the campaign is turn-based with hidden hex movement, compact 2D formation battles, faction units, moving NPCs, fog, trade routes, rescue events, portrait diplomacy, war, and sieges. Preserve the simplification contract and the M7 conflict boundary. Keep the plan updated as decisions are made, with a brief record of scope changes and milestone completion.
 
 Use the selected painted 2D art direction and animation-state matrix as the presentation brief. Prototype starter movement/attack/reaction loops in M1; validate one polished vignette before expanding final assets. Keep outcome resolution independent of playback and retain the visual/readability gate alongside gameplay checks.
 
@@ -893,3 +926,4 @@ Use the selected painted 2D art direction and animation-state matrix as the pres
 | 1.5 | November 1, 2026 | Selected a painted 2D medieval/industrial art direction and fixed elevated battle view under delegated art authority; added animation states, timing/playback/accessibility rules, shared-rig and asset budgets, staged production, exported visual quality gates, and updated coverage/consistency checks |
 | 1.6 | November 1, 2026 | Reviewed the complete plan as QA; adopted concrete prototype rules; implemented and played the short Greyford intro/travel/battle/save demo; recorded 252 passing checks, native victory/recovery evidence, PCK initialization, fixed defects, and open export/human/performance gates without claiming later milestones complete |
 | 1.7 | November 1, 2026 | Adopted the user's full backstory correction; fixed the assassin, princess/heir and marriage promise, archduke's sacrifice, seized mech escape, ten secessionists/twelve loyalists, imperial hunt and restoration goal; updated four-memory intro, temporary local allies and zero-gold start while preserving old saves |
+| 1.8 | November 1, 2026 | Recorded the detailed story interview, tragic royal-family motive, false accusation and inherited-domain betrayal, required evidence, permanent three-house bargain, midpoint rescue, independent escape/exile, corrupting throne and two endings; adopted 10/15 battle caps, companion pilots and campaign-support nobles, simple banner creation, persistent owned frames, shared workshop storage, modules/refits, party inventory, and save/acceptance requirements. Documentation only; runtime and prior QA evidence unchanged. |

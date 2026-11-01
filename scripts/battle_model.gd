@@ -111,7 +111,7 @@ func attack(id: String, target_id: String) -> Dictionary:
 	active_id = ""
 	sequence += 1
 	_check_outcome()
-	return {"type": "attack", "id": id, "target": target_id, "from": a.pos, "to": b.pos, "old_hp": old_hp, "damage": preview.damage, "label": preview.label, "ranged": a.range > 1, "removed": not alive(b), "routed": b.cohesion == 2, "sequence": sequence}
+	return {"type": "attack", "id": id, "target": target_id, "from": a.pos, "to": b.pos, "old_hp": old_hp, "damage": preview.damage, "label": preview.label, "guarded": preview.guarded, "ranged": a.range > 1, "removed": not alive(b), "routed": b.cohesion == 2, "sequence": sequence}
 
 func guard_unit(id: String) -> Dictionary:
 	if not can_activate(id):

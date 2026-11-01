@@ -4,6 +4,7 @@ const Battle = preload("res://scripts/battle_model.gd")
 const Campaign = preload("res://scripts/campaign_model.gd")
 const Saves = preload("res://scripts/save_store.gd")
 const Demo = preload("res://scripts/demo.gd")
+const Mechs = preload("res://scripts/mech_art.gd")
 var checks = 0
 var failures = []
 
@@ -22,6 +23,7 @@ func _run():
 	_campaign_tests()
 	_save_tests()
 	_animation_tests()
+	_mech_art_tests()
 	var result = {"checks": checks, "failures": failures, "engine": Engine.get_version_info().string, "suite": "greyford-demo-0.1"}
 	var file = FileAccess.open("res://qa/test-results.json", FileAccess.WRITE)
 	if file:
@@ -267,3 +269,112 @@ func _animation_tests():
 		final_states.append(demo.battle.units.duplicate(true))
 		demo.free()
 	check(final_states[0] == final_states[1] and final_states[1] == final_states[2], "normal/fast/quick playback have identical authoritative final states")
+
+func _mech_art_tests():
+	var noisy = Image.create(24, 24, false, Image.FORMAT_RGBA8)
+	noisy.fill(Color(0.9, 0.9, 0.9, 0.01))
+	noisy.fill_rect(Rect2i(8, 5, 8, 14), Color.WHITE)
+	noisy.set_pixel(0, 0, Color.WHITE)
+	var trimmed = Mechs._solid_bounds(noisy, Rect2i(0, 0, 24, 24))
+	check(trimmed.position == Vector2i(7, 4) and trimmed.size == Vector2i(10, 16), "part registration ignores faint margins and isolated opaque specks instead of shrinking armor")
+	var battle = Battle.new()
+	var hero = battle.unit("hero")
+	var original = hero.duplicate(true)
+	check(Mechs.has_art(hero) and not Mechs.has_art(battle.unit("walker")), "only the approved starter mech uses production art")
+	var image = Mechs.ATLAS.get_image()
+	check(image.has_mipmaps() or image.get_width() > 1000, "master atlas has sufficient source resolution")
+	check(image.detect_alpha() != Image.ALPHA_NONE, "master atlas preserves transparent alpha")
+	for facing in 6:
+		hero.facing = facing
+		Mechs._prepare(facing)
+		check(Mechs._parts[facing].size() == 12, "facing %d resolves twelve parts from the master atlas" % facing)
+		for part in Mechs._parts[facing]:
+			var region: Rect2 = Mechs._parts[facing][part]
+			check(region.has_area() and Rect2(Vector2.ZERO, Vector2(image.get_size())).encloses(region), "facing %d %s region is nonempty and inside the single texture" % [facing, part])
+		for part in Mechs.SHARED_COLUMNS:
+			check(Mechs._parts[facing][part] == Mechs._parts[0][part], "all views reuse the identical %s artwork" % part)
+		for state in Mechs.STATES:
+			for progress in [0.0, 0.3, 0.48, 0.75, 1.0]:
+				var pose = Mechs.pose(hero, 0.0, {"state": state, "progress": progress, "travel_px": 12.0})
+				var finite = pose.chest.is_finite() and pose.pelvis.is_finite()
+				for group in [pose.feet, pose.knees, pose.hands, pose.shoulders]:
+					for point in group:
+						finite = finite and point.is_finite()
+				check(finite, "facing %d %s at %.2f has finite articulated joints" % [facing, state, progress])
+	hero.facing = original.facing
+	check(hero == original, "sampling atlas and animation never mutates combat units")
+	var normal = Mechs.pose(hero, 0.0, {"state": "hit", "progress": 0.5})
+	var guarded = Mechs.pose(hero, 0.0, {"state": "guard_hit", "progress": 0.5})
+	check(guarded.guarded and not normal.guarded and guarded.hands[0].y < normal.hands[0].y, "guarded hit visibly retains a raised shield")
+	var quiet = Mechs.pose(hero, 0.0, {"state": "hit", "progress": 0.5}, true)
+	check(absf(quiet.root.x) < absf(normal.root.x), "reduced motion limits hit recoil")
+	var idle = Mechs.pose(hero, 0.0, {"state": "idle", "progress": 1.0})
+	var recovered = Mechs.pose(hero, 0.0, {"state": "hit", "progress": 1.0})
+	check(idle.root.distance_to(recovered.root) < 0.001, "normal hit recovers to ready stance")
+	var hold = Mechs.pose(hero, 0.0, {"state": "guard", "progress": 1.0})
+	var block_recovered = Mechs.pose(hero, 0.0, {"state": "guard_hit", "progress": 1.0})
+	check(hold.hands[0].distance_to(block_recovered.hands[0]) < 0.001, "guarded hit recovers to guard hold")
+	# Two stance samples: root advances 4 pixels, planted local foot recedes 4.
+	var step_a = Mechs.pose(hero, 0.0, {"state": "walk", "travel_px": 2.0})
+	var step_b = Mechs.pose(hero, 0.0, {"state": "walk", "travel_px": 6.0})
+	check((step_b.feet[0] + step_b.forward * 4.0).distance_to(step_a.feet[0]) < 0.01, "stance foot cancels root travel instead of sliding")
+	for attacker in ["walker", "deserters"]:
+		for guarding in [false, true]:
+			var b = Battle.new()
+			b.side = 1
+			b.unit(attacker).pos = b.unit("hero").pos + Vector2i(1, 0)
+			b.unit("hero").guard = guarding
+			var before = b.unit("hero").hp
+			var record = b.attack(attacker, "hero")
+			check(not record.is_empty() and record.guarded == guarding, "melee/ranged events capture guard at damage resolution")
+			check(b.unit("hero").hp < before, "ordinary and guarded hits both apply actual damage")
+			b.unit("hero").guard = not guarding
+			check(Mechs.context(b.unit("hero"), record, 0.6).state == ("guard_hit" if guarding else "hit"), "hit state uses event snapshot rather than subsequently changed guard")
+			check(Mechs.context(b.unit("hero"), record, 0.47).state not in ["hit", "guard_hit"], "recoil waits for impact cue")
+	var lethal = Battle.new()
+	lethal.side = 1
+	lethal.unit("hero").hp = 1
+	lethal.unit("hero").guard = true
+	lethal.unit("walker").pos = lethal.unit("hero").pos + Vector2i(1, 0)
+	var fatal = lethal.attack("walker", "hero")
+	check(fatal.guarded and fatal.removed and lethal.outcome == "defeat", "guarded lethal damage still reaches the existing defeat path")
+	hero.guard = true
+	check(Mechs.context(hero, {}, 0).state == "guard", "guard persists between incoming actions")
+	hero.guard = false
+	check(Mechs.context(hero, {}, 0).state == "idle", "guard expiration returns to idle")
+	check(Mechs.context(hero, {"type": "guard", "id": "hero"}, 0.3).progress == 0.3, "guard entry samples its existing action progress")
+	var movement = Mechs.context(hero, {"type": "move", "id": "hero"}, 0.4)
+	check(movement.state == "walk", "walking overrides the resting pose")
+	var guard_results = []
+	for mode in 3:
+		for reduced in [false, true]:
+			var demo = Demo.new()
+			demo.muted = true
+			demo.phase = "battle"
+			demo.battle = Battle.new()
+			demo.battle.side = 1
+			demo.speed_mode = mode
+			demo.reduced_motion = reduced
+			for enemy in demo.battle.units:
+				if enemy.side == 1 and enemy.id != "walker":
+					enemy.acted = true
+			demo.battle.unit("hero").guard = true
+			demo.battle.unit("walker").pos = demo.battle.unit("hero").pos + Vector2i(1, 0)
+			var event = demo.battle.attack("walker", "hero")
+			var hp = demo.battle.unit("hero").hp
+			demo._play_action(event)
+			demo.modal = "pause"
+			demo._process(1.0)
+			check(demo.animation_time == 0 and demo.battle.unit("hero").hp == hp, "guarded-hit pause freezes playback without resolving damage again")
+			demo.modal = ""
+			for frame in 120:
+				demo._process(1.0 / 60.0)
+			check(demo.animation.is_empty() and demo.battle.unit("hero").hp == hp, "guarded-hit playback completes once at every speed and motion setting")
+			check(not demo.battle.unit("hero").guard and demo.battle.side == 0, "guard expires normally when playback releases the next turn")
+			guard_results.append(demo.battle.units.duplicate(true))
+			demo._play_action({"type": "guard", "id": "hero"})
+			demo._start_practice()
+			check(demo.animation.is_empty() and demo.battle.unit("hero").hp == 30 and not demo.battle.unit("hero").guard, "restart discards old clips and defensive poses")
+			demo.free()
+	for result in guard_results:
+		check(result == guard_results[0], "guarded-hit outcomes agree across Normal/Fast/Quick and reduced motion")

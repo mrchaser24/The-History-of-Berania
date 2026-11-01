@@ -41,6 +41,10 @@ func _run():
 	check(d.phase == "battle" and d.campaign.pending_battle and d.campaign.mech_hp == 30, "village repairs for free and creates battle checkpoint")
 	var turn = d.campaign.turn
 	check(d._battle_cell_at(d._pos(d.battle.unit("hero").pos) + Vector2(0, -70)) == d.battle.unit("hero").pos, "mech body hit test targets its occupied hex")
+	check(d._battle_cell_at(d._pos(d.battle.unit("hero").pos) + Vector2(0, -123)) == d.battle.unit("hero").pos, "ivory knight helmet uses the new art bounds")
+	var bent_path = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(1, 1)]
+	check(d._mech_travel(bent_path, 0.25).facing == 0 and d._mech_travel(bent_path, 0.75).facing == 1, "walking faces the current path segment rather than its final destination")
+	check(d._mech_travel(bent_path, 1.0).distance > d._mech_travel(bent_path, 0.5).distance, "walking phase follows cumulative screen travel")
 	check(d._battle_cell_at(d._pos(d.battle.unit("raiders").pos) + Vector2(0, -40)) == d.battle.unit("raiders").pos, "formation body hit test targets its occupied hex")
 	var safety = 0
 	while d.phase == "battle" and safety < 1000:

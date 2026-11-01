@@ -4,6 +4,7 @@ const Battle = preload("res://scripts/battle_model.gd")
 const Campaign = preload("res://scripts/campaign_model.gd")
 const Saves = preload("res://scripts/save_store.gd")
 const Figures = preload("res://scripts/unit_art.gd")
+const Mechs = preload("res://scripts/mech_art.gd")
 const Story = preload("res://scripts/story.gd")
 const MEADOW = preload("res://assets/art/greyford_meadow.png")
 const MARCH = preload("res://assets/art/greyford_march.png")
@@ -192,6 +193,7 @@ func _refresh_ui():
 		_button("Continue", Rect2(390, 625, 180, 58), _continue_demo, false, continue_data.is_empty())
 		_button("Practice battle", Rect2(90, 700, 210, 46), _start_practice)
 		_button("How to play", Rect2(315, 700, 210, 46), func(): modal = "help"; _refresh_ui())
+		_button("Mech animations", Rect2(540, 700, 210, 46), func(): get_tree().change_scene_to_file("res://scenes/mech_preview.tscn"))
 	elif phase == "intro":
 		if intro_page < Story.MEMORIES.size():
 			_button("Continue the story   →", Rect2(1170, 792, 300, 52), _advance_intro, true)
@@ -563,8 +565,9 @@ func _battle_cell_at(point: Vector2) -> Vector2i:
 	for u in front_to_back:
 		if not battle.alive(u):
 			continue
-		var height = 98 if u.kind == "mech" else 72
-		var body = Rect2(_pos(u.pos) + Vector2(-42, -height), Vector2(84, height + 49))
+		var art_bounds = Mechs.bounds(u)
+		# Body art follows its occupied hex; labels keep the existing touch allowance.
+		var body = Rect2(_pos(u.pos) + art_bounds.position, Vector2(art_bounds.size.x, art_bounds.size.y + (36 if Mechs.has_art(u) else 0)))
 		if body.has_point(point):
 			return u.pos
 	return _cell_at(point, false)
@@ -675,7 +678,7 @@ func _draw_intro():
 		_wrap(memory.body, Rect2(120, 280, 1055, 255), 26, PAPER, 39)
 		_text("MEMORY %d / %d" % [intro_page + 1, Story.MEMORIES.size()], Vector2(120, 565), 16, GOLD)
 		var u = Battle.DEFINITIONS.militia_mech.duplicate(true)
-		u.merge({"side": 0, "facing": 0, "max_hp": 30, "guard": false})
+		u.merge({"definition": "militia_mech", "side": 0, "facing": 1, "max_hp": 30, "guard": false})
 		Figures.draw_unit(self, u, Vector2(1370, 545), clock)
 		_panel(Rect2(80, 676, 1440, 185), PAPER)
 		_text(memory.caption, Vector2(112, 720), 17, Color("6f6c53"))
@@ -930,6 +933,11 @@ func _draw_battle():
 		var display_hp = animation.old_hp if showing_hit and progress < 0.48 else u.hp
 		var display_unit = u.duplicate()
 		display_unit.hp = maxi(1, display_hp)
+		var presentation = Mechs.context(u, animation, progress)
+		if moving:
+			var travel = _mech_travel(animation.path, progress)
+			presentation.travel_px = travel.distance
+			display_unit.facing = travel.facing
 		if u.id == selected:
 			Figures.ellipse(self, center + Vector2(0, 6), Vector2(47, 19), Color(0.93, 0.83, 0.5, 0.3))
 		if showing_hit and progress >= 0.48 and not battle.alive(u):
@@ -938,7 +946,7 @@ func _draw_battle():
 			else:
 				draw_line(center + Vector2(-22, -10), center + Vector2(21, 2), Color("59665c"), 13, true)
 		else:
-			Figures.draw_unit(self, display_unit, center, clock, moving, progress if attacking else 0.0, hit, reduced_motion)
+			Figures.draw_unit(self, display_unit, center, clock, moving, progress if attacking else 0.0, hit, reduced_motion, presentation)
 		var faction_color = TEAL if u.side == 0 else RED
 		var bar = Rect2(center + Vector2(-31, 24), Vector2(62, 6))
 		draw_rect(bar.grow(1), INK)
@@ -957,10 +965,26 @@ func _draw_battle():
 	if animation.get("type") == "attack":
 		_draw_impact()
 
+func _mech_travel(path: Array, progress: float) -> Dictionary:
+	var segments = path.size() - 1
+	if segments <= 0:
+		return {"distance": 0.0, "facing": 0}
+	var cursor = clampf(progress, 0, 1) * segments
+	var index = mini(floori(cursor), segments - 1)
+	var distance = 0.0
+	for i in index:
+		distance += _pos(path[i]).distance_to(_pos(path[i + 1]))
+	distance += _pos(path[index]).distance_to(_pos(path[index + 1])) * (cursor - index)
+	return {"distance": distance, "facing": Hex.direction(path[index], path[index + 1])}
+
 func _draw_impact():
 	var progress = _progress()
 	var source = _pos(animation.from) + Vector2(0, -36)
 	var target = _pos(animation.to) + Vector2(0, -28)
+	var target_unit = battle.unit(animation.target)
+	if Mechs.has_art(target_unit):
+		var target_pose = Mechs.pose(target_unit, clock, Mechs.context(target_unit, animation, progress), reduced_motion)
+		target = _pos(animation.to) + (target_pose.hands[0] if animation.get("guarded", false) else target_pose.chest)
 	if animation.ranged and progress >= 0.17 and progress < 0.48:
 		var travel = (progress - 0.17) / 0.31
 		var p = source.lerp(target, travel)
@@ -973,6 +997,8 @@ func _draw_impact():
 				var delta = Vector2.from_angle(i * TAU / 7) * spread * 35
 				draw_line(target + delta * 0.7, target + delta, Color(1, 0.84, 0.49, 1 - spread), 2, true)
 		_text("−%d" % animation.damage, target + Vector2(-15, -18 - spread * 27), 28, Color("ffe6c0"), true)
+		if animation.get("guarded", false):
+			_text("GUARD", target + Vector2(-24, 9), 13, GOLD)
 		if animation.routed:
 			_text("ROUTED", target + Vector2(-34, 6), 16, RED)
 

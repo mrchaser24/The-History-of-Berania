@@ -1,5 +1,11 @@
 # Demo art provenance
 
+## Ivory knight refresh — November 1, 2026
+
+The user approved four generated mech concepts, selected the ivory/navy knight for Oathkeeper, and refined production to **one master rotation/cutout atlas**. After rejecting the thin first assembly, the user reaffirmed the complete original knight as the art authority. `mechs/oathkeeper/parts-v2.png` is the only runtime mech texture. Its six views were revised together in one built-in imagegen call, with one shared limb inventory; they are not a collage of separate directional generations. Layers are sampled and articulated without rewriting the source image. Solid-alpha registration, corrected segment extents, upright proportions and restored armor mass replace the rejected first assembly.
+
+Approved concepts are preserved in `mechs/concepts/`; only Oathkeeper is integrated. Superseded studies and the exact generation prompts are preserved in [the source provenance](mechs/oathkeeper/source/PROMPTS.md). Concepts and source studies are excluded from imports and exported game data. Original background/portrait provenance below remains applicable.
+
 Created November 1, 2026 using the built-in imagegen tool and the imagegen skill. Original project art; no reference images were supplied. Captain Mira and Greyford are provisional demo names, not final story canon.
 
 `greyford_meadow.png` is the painted title/dialogue/battle backdrop. `captain_mira.png` is the original dialogue portrait. Both are copied into this project; no runtime dependency on the generation cache remains. Animated units and interface illustrations are original code-drawn 2D art.
@@ -19,4 +25,3 @@ Use case: stylized-concept. Asset type: painted 2D tactical game battlefield bac
 ### portrait
 
 Use case: stylized-concept. Asset type: original transparent-background 2D portrait for a medieval industrial strategy RPG. Primary request: a single adult female border captain, waist-up, three-quarter view facing slightly right, calm resolute expression, shoulder-length dark brown hair partially tied back, warm olive skin, slate-blue cloak over practical weathered steel brigandine with restrained brass fittings, small ivory embroidered heraldic sun on shoulder, one gloved hand resting at belt, unhelmeted. Style: beautifully hand-painted storybook realism, expressive face, elegant selective ink lines, textured brush shading, warm upper-left light and cool navy shadows; grounded medieval clothing, no futuristic suit. Composition: entire hair, shoulders and hands comfortably inside the frame; cropped at lower hips; isolated on genuine transparent background. Constraints: no text, no lettering, no frame, no scenery, no logos, no watermark, original character.
-
