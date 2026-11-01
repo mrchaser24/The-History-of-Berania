@@ -1,0 +1,190 @@
+[
+	{
+		"destination": [
+			4,
+			4
+		],
+		"id": "hero",
+		"round": 1,
+		"side": 0,
+		"type": "move"
+	},
+	{
+		"id": "hero",
+		"round": 1,
+		"side": 0,
+		"type": "guard"
+	},
+	{
+		"destination": [
+			2,
+			3
+		],
+		"id": "blades",
+		"round": 1,
+		"side": 0,
+		"type": "move"
+	},
+	{
+		"id": "blades",
+		"round": 1,
+		"side": 0,
+		"type": "guard"
+	},
+	{
+		"destination": [
+			2,
+			4
+		],
+		"id": "gunners",
+		"round": 1,
+		"side": 0,
+		"type": "move"
+	},
+	{
+		"id": "gunners",
+		"round": 1,
+		"side": 0,
+		"type": "guard"
+	},
+	{
+		"destination": [
+			5,
+			4
+		],
+		"id": "raiders",
+		"round": 1,
+		"side": 1,
+		"type": "move"
+	},
+	{
+		"id": "raiders",
+		"round": 1,
+		"side": 1,
+		"target": "hero",
+		"type": "attack"
+	},
+	{
+		"destination": [
+			5,
+			2
+		],
+		"id": "deserters",
+		"round": 1,
+		"side": 1,
+		"type": "move"
+	},
+	{
+		"id": "deserters",
+		"round": 1,
+		"side": 1,
+		"type": "guard"
+	},
+	{
+		"destination": [
+			4,
+			5
+		],
+		"id": "walker",
+		"round": 1,
+		"side": 1,
+		"type": "move"
+	},
+	{
+		"id": "walker",
+		"round": 1,
+		"side": 1,
+		"target": "hero",
+		"type": "attack"
+	},
+	{
+		"id": "hero",
+		"round": 2,
+		"side": 0,
+		"target": "raiders",
+		"type": "attack"
+	},
+	{
+		"destination": [
+			4,
+			2
+		],
+		"id": "blades",
+		"round": 2,
+		"side": 0,
+		"type": "move"
+	},
+	{
+		"id": "blades",
+		"round": 2,
+		"side": 0,
+		"target": "deserters",
+		"type": "attack"
+	},
+	{
+		"destination": [
+			3,
+			5
+		],
+		"id": "gunners",
+		"round": 2,
+		"side": 0,
+		"type": "move"
+	},
+	{
+		"id": "gunners",
+		"round": 2,
+		"side": 0,
+		"target": "raiders",
+		"type": "attack"
+	},
+	{
+		"id": "deserters",
+		"round": 2,
+		"side": 1,
+		"target": "blades",
+		"type": "attack"
+	},
+	{
+		"id": "walker",
+		"round": 2,
+		"side": 1,
+		"target": "gunners",
+		"type": "attack"
+	},
+	{
+		"id": "hero",
+		"round": 3,
+		"side": 0,
+		"target": "walker",
+		"type": "attack"
+	},
+	{
+		"id": "blades",
+		"round": 3,
+		"side": 0,
+		"target": "deserters",
+		"type": "attack"
+	},
+	{
+		"id": "gunners",
+		"round": 3,
+		"side": 0,
+		"target": "walker",
+		"type": "attack"
+	},
+	{
+		"id": "walker",
+		"round": 3,
+		"side": 1,
+		"target": "gunners",
+		"type": "attack"
+	},
+	{
+		"id": "hero",
+		"round": 4,
+		"side": 0,
+		"target": "walker",
+		"type": "attack"
+	}
+]
