@@ -131,6 +131,7 @@ static func valid(state) -> bool:
 		var p = state.pending
 		if not p.get("id") is String or p.id in state.resolved or not p.get("name") is String or p.get("kind") not in ["guild", "village", "caravan", "raid", "camp", "merchant_rescue", "funded_rescue", "tournament", "companion", "investigation", "elite", "prison", "siege", "final", "obligation", "contact", "house_support"] or not p.get("frame_id") is String or not p.get("major") is bool or not _integer(p.get("reward"), 0, 100): return false
 		if p.has("target") and (not p.target is String or not _integer(p.get("fee"), 0, 5)): return false
+		if p.has("objective_target") and not _integer(p.objective_target, 1, 10): return false
 		var cap = 15 if p.major else 10
 		var all_ids = []
 		for key in ["friendly", "enemy"]:

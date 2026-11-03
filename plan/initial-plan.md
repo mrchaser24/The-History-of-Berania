@@ -11,7 +11,7 @@ This replaces the older production roadmap and its superseded art experiments. R
 - Detailed, inked/painted 2D art is the selected presentation. The existing illustrated Oathkeeper v004 sheet is restored; the pixel experiment is offline.
 - Fixed complete mechs with permanent weapons. Only left/right visual facings; each frame contains the complete machine, sword and shield.
 - Remove all 3D work, model/rig/render pipelines, full-rotation work and interchangeable weapons from production scope.
-- No QA work: do not run or create automated tests, QA captures, review sessions, benchmarks or acceptance-gate exercises. Retain ordinary runtime input/save validation and transaction guards as functional game code.
+- The user authorized targeted Godot exercises of the current changes on November 4, superseding the earlier no-QA instruction for this work. Retain ordinary runtime input/save validation and transaction guards as functional game code.
 - Main gameplay implementation comes before further art/animation production. The existing detailed walk/attack are not newly approved or claimed fixed. Their limitations must not stall campaign work.
 - Preserve source artwork, existing user edits and real player saves. Old experiments and reports are not active requirements.
 - Zero spending and no paid service dependencies. Use the existing Godot/GDScript project and local resources.
@@ -27,11 +27,15 @@ The core loop is **travel → work/trade → prepare troops and frames → fight
 
 The opening and regional framework now connect to the chapter/HQ flow, categorized inventory and loot, funded caravan, tournament, separate formation/pilot/frame progression, five optional personal pilots, the 22-seat diplomatic/siege model, required investigation, permanent bargain, rescue/exile, recognition and both endings. The new campaign menus connect these models to ordinary play.
 
-[Implementation state](implementation-state.md) records the concrete paths, authored defaults, migration and remaining content/presentation boundary. Checkmarks below mean source implementation, not exercised acceptance. No Godot run, QA, tests or packaging were performed, and real player saves were not rewritten. No stale package remains in the workspace.
+[Implementation state](implementation-state.md) records the concrete paths, authored defaults, migration and remaining content/presentation boundary. Targeted battle, controller and isolated first-chapter persistence exercises passed in Godot on November 4. The full campaign and device layouts have not been exercised; real player saves were not rewritten and no package was rebuilt.
 
 ## Implementation order
 
 Implement these in order, connecting each feature to the real campaign and existing save/transaction flow. Reuse existing encounters, maps, portraits and unit drawings while functions are incomplete. Do not replace delivery with more planning or art experiments.
+
+### Next priority — battle gameplay
+
+- [x] Implement the agreed five-phase turn, per-action confirmations, melee counterattacks and contested capture objectives with encounter-configurable targets, following [battle phases](battle-phases.md). Targeted battle and controller exercises passed in Godot on November 4; a full campaign and device playthrough remain outstanding.
 
 ### P0 — Production reset
 
@@ -127,4 +131,4 @@ All 3D production; pixel/detailed style switching experiments; segmented mech ri
 
 ## Current implementation handoff
 
-P1–P6 have connected source implementations; [the implementation state](implementation-state.md) describes their bounded scope and authored defaults. P7's ordinary menus and input functions are connected. Detailed art beyond Oathkeeper, richer authored conversations/scenery and a new delivery package remain separate work; none was silently marked as finished artwork or an exercised build. Preserve the no-QA instruction, real saves and unrelated dirty work. Do not restart animation comparisons or historical review pipelines.
+P1–P6 have connected source implementations; [the implementation state](implementation-state.md) describes their bounded scope and authored defaults. P7's ordinary menus and input functions are connected. Detailed art beyond Oathkeeper, richer authored conversations/scenery and a new delivery package remain separate work. Preserve real saves and unrelated dirty work; do not restart animation comparisons or historical review pipelines.

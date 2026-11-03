@@ -1,6 +1,6 @@
 extends Node2D
 const Hex = preload("res://scripts/hex_grid.gd")
-const Battle = preload("res://scripts/battle_model.gd")
+const Battle = preload("res://scripts/phased_battle.gd")
 const Region = preload("res://scripts/region_model.gd")
 const Campaign = preload("res://scripts/campaign_model.gd")
 const Saves = preload("res://scripts/save_store.gd")
@@ -34,6 +34,10 @@ var phase = "title"
 var intro_page = 0
 var campaign = Campaign.new()
 var battle
+var pending_action = {}
+var charge_destination = Vector2i(-999, -999)
+var pending_facing = 0
+var action_queue = []
 var saves = Saves.new()
 var selected = "hero"
 var hovered = Vector2i(-999, -999)
@@ -292,15 +296,21 @@ func _refresh_ui():
 		var btn_gap = 10.0
 		var bx = 1600 - btn_w - btn_margin
 		var by_end = 900 - btn_margin - btn_h
-		_button("End turn", Rect2(bx, by_end, btn_w, btn_h), _end_turn, true, battle.side != 0 or not animation.is_empty())
+		_button("Next phase", Rect2(bx, by_end, btn_w, btn_h), _end_turn, true, battle.side != 0 or not animation.is_empty() or not pending_action.is_empty())
 		if _player_ready():
-			_button("Guard [B]", Rect2(bx - btn_w - btn_gap, by_end, btn_w, btn_h), _guard, false, not _player_ready())
-			_button("Face [F]", Rect2(bx, by_end - btn_h - btn_gap, btn_w, btn_h), _face, false, not _player_ready() or battle.unit(selected).get("rotated", true))
+			if battle.battle_phase == 0:
+				_button("Guard [B]", Rect2(bx - btn_w - btn_gap, by_end, btn_w, btn_h), _guard)
+				_button("Rally", Rect2(bx, by_end - btn_h - btn_gap, btn_w, btn_h), func(): _stage_action({"kind": "rally", "id": selected}, "Rally: remove one cohesion loss."), false, battle.unit(selected).cohesion != 1)
+				if battle.unit(selected).kind == "mage": _button("Mend [E]", Rect2(bx - btn_w - btn_gap, by_end - btn_h - btn_gap, btn_w, btn_h), func(): mend_mode = not mend_mode; _refresh_ui())
+			if battle.battle_phase == 1: _button("Face [F]", Rect2(bx, by_end - btn_h - btn_gap, btn_w, btn_h), _face, false, battle.unit(selected).rotated)
+			if battle.battle_phase in [2, 3] and battle.unit(selected).cooldown == 0 and ((battle.battle_phase == 2) == battle.has_ranged(battle.unit(selected))): _button("Ability [Q]", Rect2(bx - btn_w - btn_gap, by_end - btn_h - btn_gap, btn_w, btn_h), func(): ability_mode = not ability_mode; _refresh_ui(), ability_mode)
+		if charge_destination in battle.board and pending_action.is_empty(): _button("Cancel charge", Rect2(930, 850, 210, 42), func(): charge_destination = Vector2i(-999, -999); _refresh_ui())
+		if not pending_action.is_empty():
+			_button("Confirm action", Rect2(930, 790, 210, 52), _confirm_battle_action, true)
+			_button("Cancel", Rect2(930, 850, 210, 42), func(): pending_action = {}; charge_destination = Vector2i(-999, -999); _refresh_ui())
+			if pending_action.kind in ["move", "face"]:
+				_button("Facing " + ["E", "SE", "SW", "W", "NW", "NE"][pending_facing] + " ↻", Rect2(710, 850, 200, 42), func(): pending_facing = (pending_facing + 1) % 6; _refresh_ui())
 		if battle.combined:
-			if _player_ready() and battle.unit(selected).get("cooldown", 1) == 0:
-				_button(("◆ " if ability_mode else "") + Battle.ability_name(battle.unit(selected)) + " [Q]", Rect2(18, 466, 222, 42), func(): ability_mode = not ability_mode; mend_mode = false; _refresh_ui(), ability_mode)
-				if battle.unit(selected).get("kind") == "mage":
-					_button("Mend +4 [E]", Rect2(18, 518, 222, 40), func(): mend_mode = not mend_mode; ability_mode = false; _refresh_ui(), mend_mode)
 			_button("Next ready · Tab", Rect2(270, 796, 200, 52), _cycle_unit, false, battle.side != 0 or not animation.is_empty())
 			_button("−", Rect2(490, 796, 70, 52), func(): battle_zoom = clampf(battle_zoom - .1, .7, 1.6))
 			_button("Fit field", Rect2(572, 796, 140, 52), func(): battle_zoom = 1.0; battle_pan = Vector2.ZERO)
@@ -461,6 +471,7 @@ func _start_battle():
 	field_touches.clear(); touch_origins.clear(); dragged_touches.clear()
 	phase = "battle"
 	battle = Battle.new(campaign.region.pending) if not practice and not campaign.region.pending.is_empty() else Battle.new()
+	pending_action = {}; action_queue.clear(); charge_destination = Vector2i(-999, -999)
 	ability_mode = false
 	mend_mode = false
 	battle_zoom = 1.0
@@ -479,7 +490,7 @@ func _start_battle():
 	animation_time = 0.0
 	combat_log = ["Greyford's smith repairs your walker without charge.", "The villagers form up beside your walker.", "Route the raiders. Oathkeeper must survive."]
 	if battle.combined: combat_log = ["Deployment locked. Local and allied formations share your command limit."]
-	message = "Select a unit, click a shaded hex to move, then click an enemy in range. Guard finishes an activation."
+	message = "Command phase: select a unit and choose Guard, Rally or Mend; advance when ready."
 	_reachable()
 	_refresh_ui()
 
@@ -487,30 +498,30 @@ func _player_ready() -> bool:
 	return phase == "battle" and animation.is_empty() and battle.side == 0 and not selected.is_empty() and battle.can_activate(selected)
 
 func _select(id: String):
-	if phase != "battle" or not animation.is_empty() or battle.side != 0:
+	if phase != "battle" or not animation.is_empty() or battle.side != 0 or not pending_action.is_empty():
 		return
 	if not battle.can_activate(id):
-		message = "Finish the active formation with an attack or Guard before choosing another unit."
+		message = "That unit has no available action in this phase."
 		return
 	selected = id
 	ability_mode = false
 	mend_mode = false
+	charge_destination = Vector2i(-999, -999)
 	_reachable()
 	_refresh_ui()
 
 func _reachable():
 	cached_reachable.clear()
 	if phase == "battle" and not selected.is_empty():
-		cached_reachable = battle.reachable_paths(selected).keys()
+		cached_reachable = (battle.charge_paths(selected) if battle.battle_phase == 3 else battle.reachable_paths(selected)).keys()
 
 func _battle_click(pos: Vector2i):
-	if battle.side != 0 or pos not in battle.board or not animation.is_empty():
+	if battle.side != 0 or pos not in battle.board or not animation.is_empty() or not pending_action.is_empty():
 		return
 	var clicked = battle.occupant(pos)
 	if not clicked.is_empty() and clicked.side == 0:
 		if mend_mode and _player_ready():
-			var action = battle.mend(selected, clicked.id)
-			if not action.is_empty(): _play_action(action)
+			if battle.can_mend(selected, clicked.id): _stage_action({"kind": "mend", "id": selected, "target": clicked.id}, "Mend " + clicked.name + " for up to 4 strength.")
 			else: message = "Mend needs a wounded ally within 2 hexes and clear sight."
 			return
 		_select(clicked.id)
@@ -518,32 +529,73 @@ func _battle_click(pos: Vector2i):
 	if not _player_ready():
 		message = "Choose an available friendly unit first, or End Turn."
 		return
-	var action = {}
 	if not clicked.is_empty():
-		action = battle.attack(selected, clicked.id, ability_mode)
-		if action.is_empty():
-			message = "Target unavailable: check range, rocks, ability cooldown or its movement restriction."
+		var preview = battle.charge_preview(selected, clicked.id, charge_destination, ability_mode) if charge_destination in battle.board else battle.attack_preview(selected, clicked.id, ability_mode)
+		if preview.is_empty(): message = "Target unavailable: check phase, reach, path, cooldown and line of sight."
+		else:
+			var kind = "charge" if charge_destination in battle.board else "attack"
+			_stage_action({"kind": kind, "id": selected, "target": clicked.id, "goal": charge_destination, "special": ability_mode}, "%s · predicted %d damage · counter: %s%s" % [clicked.name, preview.damage, "yes" if preview.counter else "no", " · path: " + str(preview.get("path", [])) if kind == "charge" else ""])
 	else:
-		action = battle.move_unit(selected, pos)
-		if action.is_empty():
-			message = "You cannot move there. Occupied hexes and rocks block travel; a unit moves once per turn."
-	if not action.is_empty():
-		_play_action(action)
+		if battle.battle_phase == 1:
+			var path = battle.movement_path(selected, pos)
+			if path.is_empty(): message = "No clear movement path."
+			else:
+				pending_facing = Hex.direction(path[-2], path[-1])
+				_stage_action({"kind": "move", "id": selected, "goal": pos}, "Move along " + str(path) + ". Choose final facing, then confirm.")
+		elif battle.battle_phase == 3 and battle.charge_paths(selected).has(pos):
+			charge_destination = pos; message = "Charge destination selected. Choose an enemy within melee reach."; _refresh_ui()
+		else: message = "Choose a legal destination or target for this phase."
 
 func _guard():
-	if _player_ready():
-		_play_action(battle.guard_unit(selected))
+	if _player_ready() and battle.battle_phase == 0: _stage_action({"kind": "guard", "id": selected}, "Guard until the next friendly Command phase.")
 
 func _face():
-	if _player_ready() and battle.rotate_unit(selected):
-		animation = {"type": "turn", "id": selected, "duration": 0.18}
-		animation_time = 0.0
-		message = "Facing adjusted. The gold chevron shows the front; flank and rear hits do more damage."
-		_refresh_ui()
+	if _player_ready() and battle.battle_phase == 1 and not battle.unit(selected).rotated:
+		pending_facing = (battle.unit(selected).facing + 1) % 6
+		_stage_action({"kind": "face", "id": selected}, "Choose facing and confirm.")
+
+func _stage_action(order: Dictionary, description: String):
+	if not pending_action.is_empty(): return
+	pending_action = order
+	message = description
+	_refresh_ui()
+
+func _confirm_battle_action():
+	if pending_action.is_empty() or not animation.is_empty(): return
+	var order = pending_action.duplicate(true)
+	var action = {}
+	match order.kind:
+		"guard": action = battle.guard_unit(order.id)
+		"rally": action = battle.rally(order.id)
+		"mend": action = battle.mend(order.id, order.target)
+		"face": action = battle.rotate_confirmed(order.id, pending_facing)
+		"move": action = battle.move_confirmed(order.id, order.goal, pending_facing)
+		"attack": action = battle.attack(order.id, order.target, order.special)
+		"charge": action = battle.charge(order.id, order.target, order.goal, order.special)
+	pending_action = {}; charge_destination = Vector2i(-999, -999); mend_mode = false; ability_mode = false
+	if action.is_empty():
+		message = "This action is no longer legal. Nothing was committed."
+		_refresh_ui(); return
+	_play_action(action)
+
+func _skip_empty_phases():
+	while battle.outcome.is_empty() and battle.side == 0 and not battle.has_phase_actions():
+		battle.advance_phase()
 
 func _play_action(action: Dictionary):
 	if action.is_empty():
 		return
+	if action.has("charge_path"):
+		var strike = action.duplicate(true)
+		var path = strike.charge_path
+		strike.erase("charge_path")
+		action_queue.push_front(strike)
+		_play_action({"type": "move", "id": action.id, "path": path})
+		return
+	if action.has("counter"):
+		action_queue.append(action.counter)
+		action = action.duplicate(true)
+		action.erase("counter")
 	animation = action.duplicate(true)
 	animation_time = 0.0
 	if action.type == "move":
@@ -558,9 +610,11 @@ func _play_action(action: Dictionary):
 	elif action.type == "mend":
 		animation.duration = 0.4
 		combat_log.append("%s restores %d strength to %s." % [battle.unit(action.id).name, action.restored, battle.unit(action.target).name])
-	else:
+	elif action.type == "guard":
 		animation.duration = 0.28
 		combat_log.append(battle.unit(action.id).name + " guards: incoming damage −%d." % battle.guard_reduction(battle.unit(action.id), {"kind": "sword"}))
+	else:
+		animation.duration = 0.28
 	_reachable()
 	_refresh_ui()
 
@@ -569,22 +623,20 @@ func _finish_animation():
 	animation.clear()
 	animation_time = 0.0
 	if phase == "battle":
+		if not action_queue.is_empty():
+			_play_action(action_queue.pop_front())
+			return
 		if not battle.outcome.is_empty():
 			_finish_battle()
 		elif battle.side == 1:
 			_enemy_step()
 		else:
-			if not selected.is_empty() and battle.unit(selected).acted:
-				selected = ""
+			if not selected.is_empty() and not battle.can_activate(selected): selected = ""
 			_reachable()
-			var available = 0
-			for u in battle.units:
-				if u.side == 0 and battle.can_activate(u.id):
-					available += 1
-			if not battle.active_id.is_empty():
-				message = "Finish this unit's activation: attack a valid target or Guard."
-			else:
-				message = "All formations have acted. End the turn to continue." if available == 0 else "Choose another ready formation, or End Turn."
+			_skip_empty_phases()
+			if not battle.outcome.is_empty(): _finish_battle(); return
+			if battle.side == 1: _enemy_step(); return
+			message = battle.phase_name() + " phase: choose a unit or advance."
 	elif phase == "world" and previous_type == "npc":
 		npc_motion.clear()
 	_refresh_ui()
@@ -593,14 +645,17 @@ func _end_turn():
 	if not animation.is_empty() or not modal.is_empty():
 		return
 	if phase == "battle" and battle.side == 0:
-		battle.end_side()
+		if not pending_action.is_empty(): return
+		battle.advance_phase()
+		_skip_empty_phases()
 		if not battle.outcome.is_empty():
 			_finish_battle(); return
 		selected = ""
 		cached_reachable.clear()
-		message = "The enemy is taking its turn."
+		charge_destination = Vector2i(-999, -999)
+		message = "The enemy is taking its turn." if battle.side == 1 else battle.phase_name() + " phase."
 		_refresh_ui()
-		_enemy_step()
+		if battle.side == 1: _enemy_step()
 	elif phase == "world":
 		var snapshot = campaign.snapshot()
 		npc_motion = campaign.end_turn()
@@ -613,20 +668,17 @@ func _end_turn():
 		_refresh_ui()
 
 func _enemy_step():
-	for u in battle.units:
-		if u.side == 1 and battle.can_activate(u.id):
-			var action = battle.ai_action(u.id)
-			if not action.is_empty():
-				_play_action(action)
-				return
-	# No legal actions is a valid end-of-side state, not an AI stall.
-	battle.end_side()
-	if not battle.outcome.is_empty():
-		_finish_battle(); return
-	selected = "hero" if battle.alive(battle.unit("hero")) else ""
-	message = "Your turn. Guard expires at the start of that unit's next turn."
-	_reachable()
-	_refresh_ui()
+	while battle.side == 1 and battle.outcome.is_empty():
+		for u in battle.units:
+			if u.side == 1 and battle.can_activate(u.id):
+				var action = battle.ai_action(u.id)
+				if not action.is_empty(): _play_action(action); return
+		battle.advance_phase()
+	if not battle.outcome.is_empty(): _finish_battle(); return
+	_skip_empty_phases()
+	selected = "hero" if battle.can_activate("hero") else ""
+	message = battle.phase_name() + " phase."
+	_reachable(); _refresh_ui()
 
 func _finish_battle():
 	phase = "results"
@@ -1008,8 +1060,8 @@ func _draw_battle_hud():
 		_draw_combined_hud()
 		return
 	# Round pill — top center
-	var round_text = "ROUND %d  ·  %s" % [battle.round_number, "YOUR TURN" if battle.side == 0 else "ENEMY TURN"]
-	var pill_w = 280.0
+	var round_text = "ROUND %d  ·  %s  ·  %s" % [battle.round_number, "YOUR TURN" if battle.side == 0 else "ENEMY TURN", battle.phase_name().to_upper()]
+	var pill_w = 500.0
 	var pill_x = (1600 - pill_w) / 2.0
 	_panel(Rect2(pill_x, 12, pill_w, 38), Color(0.08, 0.14, 0.18, 0.82))
 	_text(round_text, Vector2(pill_x + 18, 39), 17, TEAL if battle.side == 0 else RED)
@@ -1236,7 +1288,7 @@ func _draw_battle():
 			_text("GUARD", center + Vector2(-22, 62), 12, GOLD)
 		elif u.cohesion == 1:
 			_text("SHAKEN", center + Vector2(-25, 62), 12, RED)
-		elif u.acted and u.side == 0:
+		elif u.side == 0 and not battle.can_activate(u.id):
 			_text("DONE", center + Vector2(-18, 62), 12, MUTED)
 		var facing_vector = (_pos(u.pos + Hex.DIRECTIONS[u.facing]) - _pos(u.pos)).normalized()
 		var arrow = center + facing_vector * 45
@@ -1313,7 +1365,7 @@ func _draw_modal():
 	_panel(Rect2(365, 205, 870, 550), Color("20343c"), GOLD)
 	if modal in ["help", "pause"]:
 		_text("A moment by the road" if modal == "pause" else "Command your company", Vector2(416, 278), 40, PAPER, true)
-		_wrap("Select a friendly unit, then a shaded hex to move. Click an enemy to attack; hover to inspect or preview damage.\nMove once, then attack or Guard. Rocks block travel and sight. Finish a moved unit before choosing another.\n1–3: select. Tab: next. B: guard. F: face. Q: ability. E: mage mend. Space: end turn. G: grid. N: speed. Esc: pause.\nOn the map, travel to Greyford and enter the village. NPCs move only on End Turn.", Rect2(416, 310, 765, 235), 20, PAPER, 29)
+		_wrap("Each side takes Command, Movement, Ranged and Charge/Melee phases. Select a unit and confirm each action; Next phase skips remaining actions.\nFor a charge, select a highlighted destination, then an enemy. A surviving defender may counter once per opposing turn.\n1–3: select. Tab: next. B: guard. F: face. Q: ability. E: mage mend. Space: next phase. G: grid. N: speed. Esc: pause.\nOnly End travel turn advances campaign time.", Rect2(416, 310, 765, 235), 20, PAPER, 29)
 	else:
 		var title = "Start a new journey?"
 		var detail = "This replaces the demo's single campaign checkpoint. Your settings remain unchanged."
@@ -1527,7 +1579,7 @@ func _draw_regional_screen():
 			var info = Battle.DEFINITIONS.get(entry.definition, Battle.COMBINED.get(entry.definition))
 			_text(entry.get("name", info.name) + (" · owned" if entry.get("owned", false) else " · local / allied"), Vector2(880, 272 + row * 24), 17, TEAL if entry.get("owned", false) else MUTED)
 			row += 1
-		_wrap("Directional stone cover blocks ranged fire from its marked face; rough ground costs 2 movement. All listed participants share the cap. Camp, courier, elite and final encounters require routing enemies; duels require the opposing mech defeated. Siege capture holds the keep for 3 turns. Hero must survive.", Rect2(880, 622, 580, 126), 19, PAPER, 28)
+		_wrap("Directional cover reduces ranged fire; rough ground costs 2 movement. All participants share the cap. In capture encounters, hold through opposing turns to score; first to the encounter target wins. Camp, courier, elite, final and duels require routing the enemy. Hero must survive.", Rect2(880, 622, 580, 126), 19, PAPER, 28)
 	_panel(Rect2(70, 705 if phase == "settlement" else 848, 1460, 60), Color("12262e"))
 	_wrap(message, Rect2(90, 714 if phase == "settlement" else 854, 1410, 49), 18, PAPER, 24)
 
@@ -1610,9 +1662,10 @@ func _draw_combined_battle():
 		var center = _pos(p)
 		Figures.polygon(self, [center + Vector2(-24, 10), center + Vector2(-25, -12), center + Vector2(0, -27), center + Vector2(24, -14), center + Vector2(25, 10)], Color("68796c"))
 		draw_line(center + Vector2(-22, -12), center + Vector2(0, -26), Color("adbaa4"), 3, true)
-	var goal = _pos(battle.objective)
-	draw_arc(goal, 30 * battle_zoom, 0, TAU, 32, GOLD, 3, true)
-	_text("KEEP" if battle.deployment.get("kind") == "siege" else "GOAL", goal + Vector2(-23, 5), 12, GOLD)
+	if battle.capture_enabled:
+		var goal = _pos(battle.objective)
+		draw_arc(goal, 30 * battle_zoom, 0, TAU, 32, GOLD, 3, true)
+		_text("KEEP" if battle.deployment.get("kind") == "siege" else "GOAL", goal + Vector2(-23, 5), 12, GOLD)
 	var sorted = battle.units.duplicate()
 	sorted.sort_custom(func(a, b): return a.pos.y < b.pos.y)
 	for u in sorted:
@@ -1640,7 +1693,7 @@ func _draw_combined_battle():
 		var hp = Rect2(center + Vector2(-22, radius - 1), Vector2(44, 5))
 		draw_rect(hp.grow(1), INK)
 		draw_rect(Rect2(hp.position, Vector2(44 * float(u.hp) / u.max_hp, 5)), color)
-		_text(str(u.hp) + (" ◆" if u.guard else (" ✓" if u.acted else "")), center + Vector2(-12, radius + 19), 12, PAPER)
+		_text(str(u.hp) + (" ◆" if u.guard else (" ✓" if u.side == battle.side and not battle.can_activate(u.id) else "")), center + Vector2(-12, radius + 19), 12, PAPER)
 	if hovered in battle.board and animation.is_empty():
 		var outline = _hex(hovered, false, 0.94); outline.append(outline[0]); draw_polyline(outline, GOLD, 2, true)
 		if _player_ready():
@@ -1710,7 +1763,8 @@ func _draw_role_icon(kind: String, center: Vector2, color: Color, scale_value: f
 
 func _draw_combined_hud():
 	_text(battle.deployment.get("name", "Battle").left(34), Vector2(273, 35), 20, PAPER, true)
-	_text("ROUND %d · %s · HOLD %d/3" % [battle.round_number, "YOUR TURN" if battle.side == 0 else "ENEMY TURN", battle.objective_progress], Vector2(680, 36), 20, TEAL)
+	_text("ROUND %d · %s · %s" % [battle.round_number, "YOUR TURN" if battle.side == 0 else "ENEMY TURN", battle.phase_name().to_upper()], Vector2(680, 36), 20, TEAL)
+	if battle.capture_enabled: _text("OBJECTIVE  %d : %d / %d" % [battle.scores[0], battle.scores[1], battle.score_target], Vector2(1100, 36), 16, GOLD)
 	_text("%d vs %d · %d × %d field" % [battle.deployment.friendly.size(), battle.deployment.enemy.size(), battle.width, battle.height], Vector2(18, 38), 18, GOLD)
 	var u = battle.occupant(hovered)
 	if u.is_empty() or not battle.alive(u): u = battle.unit(selected)

@@ -10,7 +10,7 @@ Use detailed painted/inked 2D art and fixed complete mechs. Oathkeeper retains i
 
 [Implementation state](plan/implementation-state.md) describes the actual connected functions, authored defaults and remaining boundary. [The roadmap](plan/initial-plan.md), [story canon](plan/story-canon.md) and [campaign contracts](plan/campaign-refinement.md) remain the authorities.
 
-**This is an unexercised source implementation.** No Godot run, automated tests, QA, captures, benchmarks or package rebuild were performed. No packaged build remains in the workspace. Actual player saves were not opened or rewritten during implementation.
+Targeted Godot exercises on November 4 covered battle rules, controller confirmation and isolated first-chapter persistence. They do not constitute a full campaign or device playthrough. No packaged build remains in the workspace. Actual player saves were not opened or rewritten during these exercises.
 
 ## Run and play
 

@@ -36,9 +36,11 @@ A merchant route records terms, endpoints, goods, dispatch funding, current carg
 
 ## Command and combat
 
+The [battle phase plan](battle-phases.md) governs movement, Guard, confirmation, counterattack and contested capture rules. Targeted Godot exercises passed on November 4; full campaign and device coverage remains outstanding.
+
 Ten commandable units per side in ordinary battles, fifteen in major battles and sieges. Count every allied formation, mech, cannon, settlement defender and personal pilot within the same side cap. Reserve machines consume no deployed slot. No mid-battle additions bypass the cap.
 
-Use the existing deterministic combat/cover/facing/cohesion framework, selected deployment and result application. Normal, Fast, Quick and reduced motion change presentation rather than damage or rewards. Fixed sword action remains 0.75 seconds with impact at 48%; preserve the current movement/guard contracts while campaign functions are completed.
+Use the existing deterministic combat/cover/facing/cohesion framework, selected deployment and result application, adapted to the agreed battle phases. Normal, Fast, Quick and reduced motion change presentation rather than damage or rewards. Fixed sword action remains 0.75 seconds with impact at 48%.
 
 Preparation snapshots select pilot/frame/formation instances before battle; workshop edits cannot mutate an ongoing encounter. Victory/defeat updates those same instances and claims its reward once. Defeat cannot remove the free required recovery route.
 
@@ -70,8 +72,8 @@ Lucien refuses surrender and dies fighting. Commit the canon restoration or domi
 
 Schema 4 extends the prior schema-3 baseline, conservatively migrating schemas 1/2/3 without replaying paid rewards. Preserve earned resources and the owned starter condition. Default new fields conservatively; do not create unearned headquarters, branch rewards or companion machines in an existing save.
 
-Use stable instance IDs, protected one-time claims, complete transactions, last-good backups and battle-boundary checkpoints. Runtime validation remains part of save/inventory functionality. Do not run or build QA workflows under the current instruction.
+Use stable instance IDs, protected one-time claims, complete transactions, last-good backups and battle-boundary checkpoints. Runtime validation remains part of save/inventory functionality. The user authorized targeted Godot exercises of the current changes on November 4.
 
 ## Implementation reference
 
-The bounded source implementation is documented in [implementation-state.md](implementation-state.md). Reusable domain/mission details, balance values, generic ruler names and the optional service-frame loans are authored defaults. Oathkeeper alone retains the existing detailed action art; other frame roles use supporting symbols. No runtime exercise, QA or new package accompanies this source implementation.
+The bounded source implementation is documented in [implementation-state.md](implementation-state.md). Reusable domain/mission details, balance values, generic ruler names and the optional service-frame loans are authored defaults. Oathkeeper alone retains the existing detailed action art; other frame roles use supporting symbols. Targeted Godot exercises ran on November 4; no new package was built.

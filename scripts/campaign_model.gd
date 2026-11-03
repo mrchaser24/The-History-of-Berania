@@ -8,6 +8,8 @@ const Pilots = preload("res://scripts/pilot_model.gd")
 const Politics = preload("res://scripts/politics_model.gd")
 const Chronicle = preload("res://scripts/chronicle_model.gd")
 const BattleData = preload("res://scripts/battle_model.gd")
+# Capture-enabled encounters may set an authored point target between 1 and 10.
+const OBJECTIVE_TARGETS = {"guild": 3, "village": 3, "caravan": 3, "house_support": 3, "contact": 3, "raid": 3, "merchant_rescue": 3, "funded_rescue": 3, "companion": 3, "prison": 3, "siege": 3, "obligation": 3}
 var journal = Quests.defaults()
 var inventory = Economy.defaults()
 var pilots = Pilots.defaults()
@@ -530,7 +532,7 @@ func prepare_region(kind: String, target: String = "") -> Dictionary:
 		# Essential recovery is playable even when optional spending emptied the treasury.
 		for i in 2:
 			if friendly.size() < (15 if major else 10): friendly.append({"id": "loan_" + str(i), "definition": "greyford_blades" if i == 0 else "roadwardens", "name": "Local volunteer", "owned": false})
-	return {"id": kind + "_" + str(region.next_id), "target": target, "kind": kind, "name": name, "major": major, "reward": reward, "fee": 5 if kind == "tournament" else 0, "frame_id": Workshop.frame(workshop).id, "friendly": friendly, "enemy": enemy if not enemy.is_empty() else Region.enemies(count)}
+	return {"id": kind + "_" + str(region.next_id), "target": target, "kind": kind, "name": name, "major": major, "reward": reward, "fee": 5 if kind == "tournament" else 0, "objective_target": OBJECTIVE_TARGETS.get(kind, 3), "frame_id": Workshop.frame(workshop).id, "friendly": friendly, "enemy": enemy if not enemy.is_empty() else Region.enemies(count)}
 
 func commit_region(preparation: Dictionary) -> bool:
 	if not rewarded or pending_battle or preparation.is_empty(): return false

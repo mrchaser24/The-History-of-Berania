@@ -4,11 +4,13 @@
 
 ## Latest instruction — core functions and detailed 2D
 
+- The battle design in `plan/battle-phases.md` specifies five phases per side, confirmed player unit actions, charge movement, automatic limited melee counterattacks and contested capture objectives with an encounter-authored target of 1–10 points (default 3). A specific holder scores after surviving the opponent's complete turn; both sides retain earned points and race to the target. On November 4 the user authorized running Godot and exercising these changes; targeted battle, controller and isolated campaign-save exercises passed. Preserve real saves and artwork.
+
 - The user requested a **new chat session**, a return from pixel art to the good detailed artwork, implementation of the main functions first, removal of all 3D work and unnecessary planning, and **no more QA**.
 - Active roadmap: `plan/initial-plan.md`, revision 2.1. Implement its remaining functions in order; do not substitute further planning or animation experiments for coding.
 - Detailed painted/inked whole-character 2D art is active again. `scripts/mech_art.gd` loads the existing `assets/art/mechs/oathkeeper/fullbody/v004/` atlas and its original left-facing source convention. Pixel art is historical/offline.
 - No 3D work, model/rig/render pipeline, full rotations, segmented bodies, modular/custom weapons or new pixel-vs-detailed comparisons. Retired 3D, pixel, review, QA and build resources were removed from the workspace.
-- Do not run or create QA, automated tests, review sessions, captures, benchmarks or milestone acceptance exercises. Ordinary runtime validation, save backups, eligibility checks and transaction guards remain functional requirements.
+- The earlier no-QA instruction was superseded for the November 4 Godot exercise by the user's explicit request. Ordinary runtime validation, save backups, eligibility checks and transaction guards remain functional requirements.
 - Complete campaign functions before further art production. The detailed walking/attack limitations have not been solved or newly approved by restoring the art. Do not claim smoothness from source counts or historical results.
 - Preserve unrelated user edits, original artwork and real saves. Never reset the dirty checkout or rewrite player saves during implementation.
 - Zero spending: no paid API, subscriptions, purchases, upgrade or external service dependency. Use the existing Godot/GDScript project and available local art.
@@ -48,7 +50,7 @@ The November 3 implementation adds connected source functions for P1–P6: persi
 
 New focused models are `quest_model.gd`, `economy_model.gd`, `pilot_model.gd`, `politics_model.gd` and `chronicle_model.gd`; `campaign_panel.gd` connects ordinary menus, and `landscape_layout.gd` fits the mobile canvas to display safe areas. Regional controls include next-unit navigation, touch drag/pinch and zoom/pan/fit. Schema 4 preserves schemas 1/2/3 through conservative migration and retains runtime validation, one-time claims and failed-save rollback.
 
-These are source implementations, not exercised gameplay evidence. No Godot run, QA, automated tests, captures, benchmarks or packaging were performed; actual player saves were not opened or rewritten. No packaged build remains in the workspace.
+The November 4 targeted Godot exercises covered battle rules, controller confirmation, schema-1/2/3 migration, isolated deployment checkpoints and one-time first-chapter rewards. This is not a complete campaign playthrough or device validation. Actual player saves were not opened or rewritten. No packaged build remains in the workspace.
 
 Read `plan/implementation-state.md` for the exact connected path, authored balance defaults and remaining boundary. New faces, fuller ruler/companion scenes, additional scenery and detailed non-Oathkeeper unit animation are not finished. Bounded portrait choices currently use available original heraldic emblems, clearly labeled. The existing detailed walk/attack limitations remain; do not restart QA or art experiments.
 

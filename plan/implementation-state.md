@@ -1,6 +1,6 @@
 # Campaign implementation state
 
-**November 3, 2026 — source implementation, not an exercised build.** No Godot run, automated tests, QA, captures, benchmarks or packaging were performed. No packaged build remains in the workspace. Real player save files were not opened or rewritten by this work.
+**November 4, 2026 — targeted Godot exercises completed.** Battle rules, controller confirmation and isolated first-chapter persistence were exercised. This was not a complete campaign or device playthrough, and no package was rebuilt. Real player save files were not opened or rewritten.
 
 ## Ordinary player path
 
@@ -47,5 +47,5 @@ Schemas 1/2/3 remain readable. Migration retains earned gold, trust, opening com
 
 - Richer authored companion conversations, distinct ruler biographies/portraits and more varied mission/domain scenery are content expansion beyond these reusable functional flows. Existing heraldic portraits are identified honestly.
 - Existing detailed walking/attack limitations remain. Additional complete detailed unit artwork is still deferred; supporting symbols are not finished mech animation or approval of new frame art.
-- Further interface refinement for individual devices can be implementation work if requested; safe-area/touch code has not been exercised. Do not reopen QA, tests, captures or benchmarking under the current user instruction.
+- Further interface refinement for individual devices can be implementation work if requested; safe-area/touch code has not been exercised.
 - No delivery package was rebuilt. Open the source project to use these changes; do not distribute the stale pixel-era PCK as this implementation.
