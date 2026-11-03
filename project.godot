@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="TheHistoryOfBerania"
-config/description="The Living March — 2D regional campaign, persistent workshop and hex combined-arms tactics."
+config/description="A medieval-magitech campaign of warbands, house diplomacy and two imperial claims."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
@@ -30,13 +30,8 @@ window/size/min_height=720
 
 project/assembly_name="TheHistoryOfBerania"
 
-[physics]
-
-3d/physics_engine="Jolt Physics"
-
 [rendering]
 
-rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.082, 0.153, 0.18, 1)

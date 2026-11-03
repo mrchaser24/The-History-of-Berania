@@ -9,6 +9,11 @@ const Mechs = preload("res://scripts/mech_art.gd")
 const Story = preload("res://scripts/story.gd")
 const Shop = preload("res://scripts/workshop_model.gd")
 const WorkshopPanel = preload("res://scripts/workshop_panel.gd")
+const CampaignPanel = preload("res://scripts/campaign_panel.gd")
+const Quests = preload("res://scripts/quest_model.gd")
+const Pilots = preload("res://scripts/pilot_model.gd")
+const Politics = preload("res://scripts/politics_model.gd")
+const Landscape = preload("res://scripts/landscape_layout.gd")
 const MECH_REFERENCE = preload("res://assets/art/review/oathkeeper_reference.png")
 const MEADOW = preload("res://assets/art/greyford_meadow.png")
 const MARCH = preload("res://assets/art/greyford_march.png")
@@ -63,10 +68,18 @@ var preparation_id = ""
 var selected_roster = []
 var ability_mode = false
 var mend_mode = false
+var campaign_panel
+var campaign_return_phase = "world"
+var roster_page = 0
+var field_touches = {}
+var touch_origins = {}
+var dragged_touches = {}
 var battle_zoom = 1.0
 var battle_pan = Vector2.ZERO
 
 func _ready():
+	_fit_landscape()
+	get_viewport().size_changed.connect(_fit_landscape)
 	serif = SystemFont.new()
 	serif.font_names = PackedStringArray(["Georgia", "Palatino", "Times New Roman"])
 	ui = Control.new()
@@ -127,6 +140,13 @@ func _process(delta):
 	queue_redraw()
 
 func _input(event):
+	if modal.is_empty() and phase in ["world", "battle"]:
+		if _field_touch(event): return
+	if phase == "campaign":
+		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+			_close_campaign()
+			get_viewport().set_input_as_handled()
+		return
 	if phase == "workshop":
 		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 			_close_workshop()
@@ -177,18 +197,20 @@ func _input(event):
 					_refresh_ui()
 
 func _unhandled_input(event):
+	# Field touches are handled on release; emulated clicks still serve native menu buttons.
+	if event is InputEventMouseButton and event.device == -1: return
 	if not modal.is_empty():
 		return
 	if event is InputEventMouseMotion and phase in ["battle", "world"]:
-		hovered = _cell_at(event.position, true) if phase == "world" else _battle_cell_at(event.position)
+		hovered = _cell_at(to_local(event.position), true) if phase == "world" else _battle_cell_at(to_local(event.position))
 	if event is InputEventMouseButton and event.pressed and phase == "battle" and battle.combined and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 		battle_zoom = clampf(battle_zoom + (0.1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -0.1), 0.8, 1.5)
 	if event is InputEventMouseButton and event.pressed and animation.is_empty():
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if phase == "battle":
-				_battle_click(_battle_cell_at(event.position))
+				_battle_click(_battle_cell_at(to_local(event.position)))
 			elif phase == "world":
-				_world_click(_cell_at(event.position, true))
+				_world_click(_cell_at(to_local(event.position), true))
 		elif event.button_index == MOUSE_BUTTON_RIGHT and phase == "battle":
 			if battle.active_id.is_empty():
 				selected = ""
@@ -234,14 +256,12 @@ func _refresh_ui():
 	for node in ui.get_children():
 		ui.remove_child(node)
 		node.queue_free()
+	if phase == "campaign": return
 	if phase == "title":
 		_button("Begin the prologue   →", Rect2(90, 625, 286, 58), _new_demo, true)
 		_button("Continue", Rect2(390, 625, 180, 58), _continue_demo, false, continue_data.is_empty())
 		_button("Practice battle", Rect2(90, 700, 210, 46), _start_practice)
 		_button("How to play", Rect2(315, 700, 210, 46), func(): modal = "help"; _refresh_ui())
-		_button("Legacy art study", Rect2(540, 700, 210, 46), func(): get_tree().change_scene_to_file("res://scenes/mech_preview.tscn"))
-		_button("Regional review  ·  prototype 0.3", Rect2(770, 700, 430, 46), _open_region_review, true)
-		_button("Workshop review  ·  prototype 0.2", Rect2(90, 758, 440, 46), func(): _open_workshop(true), true)
 	elif phase == "intro":
 		if intro_page < Story.MEMORIES.size():
 			_button("Continue the story   →", Rect2(1170, 792, 300, 52), _advance_intro, true)
@@ -249,11 +269,15 @@ func _refresh_ui():
 			_button("I will help defend Greyford.   →", Rect2(1000, 735, 460, 48), _enter_world, true)
 			_button("And the imperial patrols?" if intro_page == Story.MEMORIES.size() else "I understand. Let us go.", Rect2(1000, 796, 460, 48), _intro_question)
 	elif phase == "world":
-		var place = Region.settlement(campaign.player)
+		var place = campaign.settlement()
 		var at_village = campaign.player == campaign.village
-		_button("Friendly workshop", Rect2(1220, 522, 316, 42), func(): _open_workshop(false), false, not campaign.rewarded or place.is_empty() or not place.friendly or not animation.is_empty())
-		_button("Enter " + place.get("name", "settlement") if not place.is_empty() else "Help nearby incident", Rect2(1220, 578, 316, 52), _interact_region, true, not animation.is_empty() or (place.is_empty() and _incident_here().is_empty()))
-		_button("End travel turn   [Space]", Rect2(1220, 649, 316, 52), _end_turn, false, not animation.is_empty())
+		_button("Friendly workshop", Rect2(1220, 522, 316, 42), func(): _open_workshop(false), false, not campaign._friendly_service() or not animation.is_empty())
+		var can_enter = (not place.is_empty() or not _incident_here().is_empty() or not campaign.contacts_at(campaign.player).is_empty() or at_village)
+		_button("Enter Greyford" if not campaign.rewarded and at_village else ("Enter " + place.get("name", "location") if not place.is_empty() else "Nearby contact / incident"), Rect2(1220, 578, 316, 52), _interact_region, true, not animation.is_empty() or not can_enter)
+		for index in 5:
+			var tab = ["Journal", "Party", "Inventory", "Houses", "Story"][index]
+			_button(tab, Rect2(42 + index * 226, 105, 216, 34), func(): _open_campaign(tab), false, not animation.is_empty())
+		_button("End travel turn   [Space]", Rect2(1220, 649, 316, 52), _end_turn, false, not animation.is_empty() or not campaign.chronicle.ending.is_empty())
 		_button("Save checkpoint", Rect2(1220, 720, 316, 44), func(): _checkpoint(); _refresh_ui(), false, not animation.is_empty())
 		_button("Leave regional review" if region_review else "Return to title", Rect2(1220, 785, 316, 44), func(): modal = "home"; _refresh_ui())
 	elif phase == "settlement":
@@ -273,15 +297,14 @@ func _refresh_ui():
 			_button("Guard [B]", Rect2(bx - btn_w - btn_gap, by_end, btn_w, btn_h), _guard, false, not _player_ready())
 			_button("Face [F]", Rect2(bx, by_end - btn_h - btn_gap, btn_w, btn_h), _face, false, not _player_ready() or battle.unit(selected).get("rotated", true))
 		if battle.combined:
-			_button(("◆ " if ability_mode else "") + Battle.ability_name(battle.unit(selected)) + " [Q]", Rect2(18, 466, 222, 42), func(): ability_mode = not ability_mode; mend_mode = false; _refresh_ui(), ability_mode, not _player_ready() or battle.unit(selected).get("cooldown", 1) > 0)
-			if battle.unit(selected).get("kind") == "mage":
-				_button("Mend +4 [E]", Rect2(18, 518, 222, 40), func(): mend_mode = not mend_mode; ability_mode = false; _refresh_ui(), mend_mode, not _player_ready() or battle.unit(selected).cooldown > 0)
-			var index = 0
-			for u in battle.units:
-				if u.side != 0: continue
-				var unit_id = u.id
-				_button(str(index + 1) + " " + u.kind.capitalize() + (" ✓" if u.acted else ""), Rect2(260 + (index % 8) * 128, 790 + (index / 8) * 48, 122, 42), func(): _select(unit_id), selected == unit_id, not battle.can_activate(unit_id) or not animation.is_empty())
-				index += 1
+			if _player_ready() and battle.unit(selected).get("cooldown", 1) == 0:
+				_button(("◆ " if ability_mode else "") + Battle.ability_name(battle.unit(selected)) + " [Q]", Rect2(18, 466, 222, 42), func(): ability_mode = not ability_mode; mend_mode = false; _refresh_ui(), ability_mode)
+				if battle.unit(selected).get("kind") == "mage":
+					_button("Mend +4 [E]", Rect2(18, 518, 222, 40), func(): mend_mode = not mend_mode; ability_mode = false; _refresh_ui(), mend_mode)
+			_button("Next ready · Tab", Rect2(270, 796, 200, 52), _cycle_unit, false, battle.side != 0 or not animation.is_empty())
+			_button("−", Rect2(490, 796, 70, 52), func(): battle_zoom = clampf(battle_zoom - .1, .7, 1.6))
+			_button("Fit field", Rect2(572, 796, 140, 52), func(): battle_zoom = 1.0; battle_pan = Vector2.ZERO)
+			_button("+", Rect2(724, 796, 70, 52), func(): battle_zoom = clampf(battle_zoom + .1, .7, 1.6))
 
 	elif phase == "results":
 		_button("Return to region   →" if not practice else ("Return to region   →" if region_review else "Return to title   →"), Rect2(600, 690, 400, 56), _leave_results, true)
@@ -337,7 +360,7 @@ func _begin_new():
 	message = ""
 	animation.clear()
 	_checkpoint()
-	_refresh_ui()
+	_open_campaign("Identity")
 
 func _advance_intro():
 	if phase == "intro" and intro_page < Story.MEMORIES.size():
@@ -385,9 +408,11 @@ func _confirm_modal():
 
 func _enter_world():
 	phase = "world"
+	if not campaign.chronicle.ending.is_empty():
+		_open_campaign("Story"); return
 	message = "Follow the road to Greyford. Click a lit destination; each step costs one travel point."
 	if campaign.rewarded:
-		message = "Greyford is safe. Recruit, take guild work, deliver grain to Millhaven or help a visible attack. Only End travel turn advances the region."
+		message = "The journal lists the required camp and headquarters path. Optional regional work remains open. Only End travel turn advances the region."
 	elif campaign.quest == "retry":
 		message = "Your company has recovered. Enter Greyford when you are ready to retry the defense."
 	_refresh_ui()
@@ -409,7 +434,7 @@ func _world_click(pos: Vector2i):
 		return
 	animation = {"type": "travel", "path": path, "duration": 0.22 * (path.size() - 1)}
 	animation_time = 0.0
-	message = "Greyford reached. Enter the village to answer its call." if campaign.player == campaign.village else "The road continues. You have %d travel points left." % campaign.budget
+	message = "Greyford reached. Enter the village to answer its call." if campaign.player == campaign.village and not campaign.rewarded else "Travel order stopped at its destination, contact or budget limit. %d travel points remain; rough ground costs two." % campaign.budget
 	_sound("step")
 	_refresh_ui()
 
@@ -433,6 +458,7 @@ func _start_practice():
 	_start_battle()
 
 func _start_battle():
+	field_touches.clear(); touch_origins.clear(); dragged_touches.clear()
 	phase = "battle"
 	battle = Battle.new(campaign.region.pending) if not practice and not campaign.region.pending.is_empty() else Battle.new()
 	ability_mode = false
@@ -568,6 +594,8 @@ func _end_turn():
 		return
 	if phase == "battle" and battle.side == 0:
 		battle.end_side()
+		if not battle.outcome.is_empty():
+			_finish_battle(); return
 		selected = ""
 		cached_reachable.clear()
 		message = "The enemy is taking its turn."
@@ -593,6 +621,8 @@ func _enemy_step():
 				return
 	# No legal actions is a valid end-of-side state, not an AI stall.
 	battle.end_side()
+	if not battle.outcome.is_empty():
+		_finish_battle(); return
 	selected = "hero" if battle.alive(battle.unit("hero")) else ""
 	message = "Your turn. Guard expires at the start of that unit's next turn."
 	_reachable()
@@ -628,12 +658,16 @@ func _leave_results():
 	else:
 		phase = "world"
 		message = campaign.news
+		if not campaign.chronicle.ending.is_empty():
+			_open_campaign("Story")
+			return
 	_refresh_ui()
 
 func _open_workshop(review: bool = false):
-	if not review and (phase not in ["world", "settlement"] or Region.settlement(campaign.player).is_empty() or not Region.settlement(campaign.player).friendly or not campaign.rewarded or not animation.is_empty()):
+	if not review and (phase not in ["world", "settlement", "campaign"] or campaign.settlement().is_empty() or not campaign.settlement().friendly or not campaign._friendly_service() or not animation.is_empty()):
 		return
 	workshop_return_phase = phase
+	if campaign_panel != null: campaign_panel.visible = false
 	workshop_review = review
 	workshop_training = false
 	if review:
@@ -684,11 +718,23 @@ func _workshop_order(action: String, args: Dictionary):
 		workshop_panel.visible = false
 		_start_battle()
 		return
+	if not workshop_review:
+		var before = campaign.snapshot()
+		var terms = args.duplicate(true); terms.action = action
+		var response = campaign.order("shop", terms)
+		if campaign.snapshot() != before and not _checkpoint():
+			campaign.restore(before)
+			response += " Save failed; order rolled back."
+		workshop_panel.status_text = response
+		if action == "banner": workshop_panel.banner_draft = campaign.workshop.banner.duplicate(true)
+		workshop_panel.refresh()
+		return
 	var before = workshop_owner.snapshot()
 	var result = Shop.transact(workshop_owner.workshop, workshop_owner.gold, action, args)
 	if result.ok:
 		workshop_owner.workshop = result.state
 		workshop_owner.gold = result.gold
+		workshop_owner.pilots.pilots[0].frame = workshop_owner.workshop.pilot_frame
 		if not workshop_store.write(workshop_owner.snapshot()):
 			workshop_owner.restore(before)
 			result.message = workshop_store.last_error + " Your order was rolled back."
@@ -707,6 +753,9 @@ func _close_workshop():
 	workshop_training = false
 	practice = false
 	phase = workshop_return_phase
+	if campaign_panel != null:
+		campaign_panel.visible = true
+		campaign_panel.refresh()
 	_refresh_ui()
 
 func _return_from_workshop_trial():
@@ -725,7 +774,7 @@ func _checkpoint() -> bool:
 	var ok = saves.write(campaign.snapshot())
 	if not ok:
 		message = saves.last_error
-		modal = "save_error"
+		if phase not in ["campaign", "workshop"]: modal = "save_error"
 		_refresh_ui()
 	else:
 		continue_data = campaign.snapshot()
@@ -929,12 +978,15 @@ func _draw_game_shell():
 	_text("TRAVEL TURN %d  ·  %d / 3 MOVEMENT" % [campaign.turn, campaign.budget], Vector2(413, 76), 16, TEAL)
 	_panel(FIELD, Color("5c7053"))
 	_panel(Rect2(1198, 142, 360, 633))
-	_text("WANTED BY THE CROWN", Vector2(1220, 181), 17, GOLD)
+	_text("THE CIVIL WAR IS SETTLED" if not campaign.chronicle.ending.is_empty() else "WANTED BY THE CROWN", Vector2(1220, 181), 17, GOLD)
 	_text("Greyford", Vector2(1220, 224), 34, PAPER, true)
 
 	var objective = "Reach the village and answer Captain Mira's call."
 	if campaign.rewarded:
-		objective = "Trade, recruit and help the march. Reach Stonebridge for a road pact."
+		objective = "Clear the bandit camp, then ask Greyford for headquarters permission."
+		if Quests.claimed(campaign.journal, "camp"): objective = "Ask Greyford's council for headquarters permission."
+		if Quests.claimed(campaign.journal, "permission"): objective = "Enter the watchhouse north of Greyford to found your warband."
+		if Quests.claimed(campaign.journal, "headquarters"): objective = "Investigate Aldren's orders at Millhaven. Journal and Story track the required campaign."
 	elif campaign.quest == "retry":
 		objective = "Your company is recovered. Enter Greyford to retry the defense."
 	_wrap(objective, Rect2(1220, 249, 306, 100), 22, PAPER, 33)
@@ -1174,7 +1226,7 @@ func _draw_battle():
 			else:
 				draw_line(center + Vector2(-22, -10), center + Vector2(21, 2), Color("59665c"), 13, true)
 		else:
-			Figures.draw_unit(self, display_unit, center, clock, moving, progress if attacking else 0.0, hit, reduced_motion, presentation)
+			Figures.draw_unit(self, display_unit, center, clock, moving, progress if attacking else 0.0, hit, reduced_motion or speed_mode == 2, presentation)
 		var faction_color = TEAL if u.side == 0 else RED
 		var bar = Rect2(center + Vector2(-31, 24), Vector2(62, 6))
 		draw_rect(bar.grow(1), INK)
@@ -1236,17 +1288,21 @@ func _draw_results():
 	_panel(Rect2(330, 195, 940, 590), Color(0.1, 0.18, 0.2, 0.97), GOLD)
 	_crest(Vector2(800, 265), 1.5)
 	var won = battle.outcome == "victory"
-	_text(("CROSSING SECURED" if battle.combined else "GREYFORD HOLDS") if won else "A BANNER BENT, NOT BROKEN", Vector2(467 if won else 425, 361), 42 if won else 34, PAPER, true)
+	var heading = "MISSION COMPLETE" if battle.combined else "GREYFORD HOLDS"
+	if battle.combined and battle.deployment.get("kind") == "final": heading = "BERANIA SETTLED"
+	if battle.combined and battle.deployment.get("kind") == "prison": heading = "AURELIA RESCUED"
+	_text(heading if won else "A BANNER BENT, NOT BROKEN", Vector2(440, 361), 42 if won else 34, PAPER, true)
 	_wrap(result_text, Rect2(440, 398, 720, 70), 29, GOLD, 40, true)
 	var detail = "Your first pay is forty gold. Mira's soldiers remain in Greyford. You have earned local trust, but your own army is still ahead of you."
 	if not won:
 		detail = "The villagers recover Oathkeeper and repair it without charge. You survive, and the defense remains available to retry."
 	if battle.combined:
-		detail = campaign.region.last_result if not practice else "Capacity review complete. This practice has no effect on your regional save."
+		detail = campaign.region.last_result if not practice else "Capacity practice complete. Your campaign is unchanged."
+		if not practice and not campaign.chronicle.ending.is_empty(): detail = "Lucien refused surrender and fell in the final battle. All twenty-two seats recognize the settlement. Continue to read the permanent ending and the companion and house epilogues."
 	_wrap(detail, Rect2(440, 477, 720, 110), 23, PAPER, 34)
 	var reward = "+40 GOLD    ·    +1 LOCAL TRUST    ·    VILLAGE DEFENDED" if won else "FREE RECOVERY    ·    NO PERMANENT LOSSES"
 	if battle.combined:
-		reward = "+%d GOLD · +1 TRUST" % campaign.region.last_reward if won else "FREE FRAME RECOVERY · FORMATIONS WOUNDED"
+		reward = "+%d GOLD · +%d TRUST · SEE JOURNAL / INVENTORY" % [campaign.region.last_reward, campaign.region.get("last_trust", 1)] if won else "FREE FRAME RECOVERY · FORMATIONS WOUNDED"
 	if practice:
 		reward = "PRACTICE ENCOUNTER    ·    CAMPAIGN UNCHANGED"
 	_text(reward, Vector2(440, 623), 17, TEAL)
@@ -1307,39 +1363,37 @@ func _interact_region():
 	if not campaign.rewarded:
 		_village()
 		return
+	var c = campaign.inventory.caravan
+	if not c.is_empty() and c.phase == "ambushed" and Region.pos(c.cell) == campaign.player:
+		_open_preparation("funded_rescue")
+		return
 	var incident = _incident_here()
 	if not incident.is_empty():
 		_open_preparation(incident.kind, incident.id)
 		return
-	if Region.settlement(campaign.player).is_empty(): return
-	phase = "settlement"
-	message = "Settlement services do not advance travel time."
-	_refresh_ui()
+	var place = campaign.settlement()
+	_open_campaign("Headquarters" if place.get("id") == "headquarters" else ("Contacts" if place.is_empty() else "Location"))
 
 func _service(action: String):
 	var before = campaign.snapshot()
-	message = campaign.regional_order(action)
+	message = campaign.order("service", {"id": action})
 	if campaign.snapshot() != before and not _checkpoint(): campaign.restore(before)
 	_refresh_ui()
 
 func _hire(definition: String):
 	var before = campaign.snapshot()
-	message = campaign.recruit(definition)
+	message = campaign.order("hire", {"id": definition})
 	if campaign.snapshot() != before and not _checkpoint(): campaign.restore(before)
 	_refresh_ui()
 
 func _trade_cargo(action: String, good: String):
 	var before = campaign.snapshot()
-	var order = Shop.transact(campaign.workshop, campaign.gold, action, {"good": good, "quantity": 1})
-	message = order.message
-	if order.ok:
-		campaign.workshop = order.state
-		campaign.gold = order.gold
-		if not _checkpoint(): campaign.restore(before)
+	message = campaign.order("shop", {"action": action, "good": good, "quantity": 1})
+	if campaign.snapshot() != before and not _checkpoint(): campaign.restore(before)
 	_refresh_ui()
 
 func _build_settlement_ui():
-	var place = Region.settlement(campaign.player)
+	var place = campaign.settlement()
 	_button("Return to regional map", Rect2(1160, 796, 354, 48), func(): phase = "world"; _refresh_ui(), true)
 	if not place.friendly:
 		_button("Raid supply line · prepare", Rect2(100, 340, 520, 56), func(): _open_preparation("raid"), true)
@@ -1370,18 +1424,19 @@ func _open_preparation(kind: String, id: String = ""):
 	preparation_id = id
 	preparation = campaign.prepare_region(kind, id)
 	if preparation.is_empty():
-		message = "No work available here now. Guild / supply jobs reopen two travel turns after a victory."
+		message = "This mission is unavailable here. Check its journal prerequisites, location and displayed costs. Guild / supply jobs reopen two travel turns after victory."
 		_refresh_ui()
 		return
 	selected_roster = campaign.region.selected.duplicate()
+	roster_page = 0
 	phase = "preparation"
-	message = "Select up to 9 owned formations. You and any local or allied formations share the 10-slot limit."
+	message = "Choose formations. Personal pilots, local volunteers and allies share the %d-slot limit. Deployment is locked before battle." % (15 if preparation.major else 10)
 	_refresh_ui()
 
 func _toggle_roster(id: String):
 	if id in selected_roster: selected_roster.erase(id)
-	elif selected_roster.size() < 9: selected_roster.append(id)
-	else: message = "Nine formations plus your mech fill the ten command slots."
+	elif selected_roster.size() < (14 if preparation.major else 9): selected_roster.append(id)
+	else: message = "The selected formation preferences fill this encounter limit. Personal pilots take priority in the displayed deployment."
 	_refresh_ui()
 
 func _preview_preparation() -> Dictionary:
@@ -1393,11 +1448,14 @@ func _preview_preparation() -> Dictionary:
 
 func _build_preparation_ui():
 	var index = 0
-	for f in campaign.region.formations:
+	for f in campaign.region.formations.slice(roster_page * 20, (roster_page + 1) * 20):
 		var id = f.id
 		var definition = Battle.DEFINITIONS.get(f.definition, Battle.COMBINED.get(f.definition))
 		_button(("✓ " if id in selected_roster else "+ ") + definition.name + " · %d/%d" % [f.hp, definition.hp], Rect2(90 + (index / 10) * 365, 265 + (index % 10) * 43, 350, 38), func(): _toggle_roster(id), id in selected_roster)
 		index += 1
+	if campaign.region.formations.size() > 20:
+		_button("Previous troops", Rect2(450, 783, 230, 54), func(): roster_page = maxi(0, roster_page - 1); _refresh_ui())
+		_button("Next troops", Rect2(695, 783, 230, 54), func(): roster_page = mini((campaign.region.formations.size() - 1) / 20, roster_page + 1); _refresh_ui())
 	_button("Deploy · lock encounter", Rect2(1100, 783, 380, 54), _commit_preparation, true)
 	_button("Return to map", Rect2(90, 783, 330, 54), func(): phase = "world"; _refresh_ui())
 
@@ -1414,7 +1472,7 @@ func _commit_preparation():
 		return
 	practice = false
 	_start_battle()
-	message = "Hold the crossing 3 consecutive turns or route the enemy. Q: ability, E: mage mend. Tab: next unit."
+	message = battle.objective_name + " Q: ability, E: mage mend. Tab: next unit."
 
 func _capacity_review(major: bool):
 	var roster = [{"id": "hero", "definition": "militia_mech"}]
@@ -1447,7 +1505,7 @@ func _draw_regional_screen():
 	draw_rect(Rect2(0, 0, 1600, 900), Color(0.04, 0.1, 0.13, 0.9))
 	_panel(Rect2(58, 50, 1484, 720), Color("1b3037"), GOLD)
 	if phase == "settlement":
-		var place = Region.settlement(campaign.player)
+		var place = campaign.settlement()
 		_text(place.name, Vector2(90, 118), 42, PAPER, true)
 		_text(place.kind + (" · REGIONAL REVIEW SAVE" if region_review else ""), Vector2(90, 156), 19, GOLD)
 		_text("%d gold · %d trust · %d/20 cargo · Grain %d · Ore %d" % [campaign.gold, campaign.trust, Shop.cargo_used(campaign.workshop), campaign.workshop.cargo.get("grain", 0), campaign.workshop.cargo.get("ore", 0)], Vector2(90, 203), 21, TEAL)
@@ -1461,15 +1519,15 @@ func _draw_regional_screen():
 	else:
 		var preview = _preview_preparation()
 		_text(preparation.name, Vector2(90, 118), 38, PAPER, true)
-		_text("DEPLOYMENT · %d / 10 FRIENDLY · %d ENEMY · %d GOLD REWARD" % [preview.get("friendly", []).size(), preview.get("enemy", []).size(), preview.get("reward", 0)], Vector2(90, 161), 20, GOLD)
+		_text("DEPLOYMENT · %d / %d FRIENDLY · %d ENEMY · %d GOLD REWARD · %d ENTRY" % [preview.get("friendly", []).size(), 15 if preview.get("major", false) else 10, preview.get("enemy", []).size(), preview.get("reward", 0), preview.get("fee", 0)], Vector2(90, 161), 20, GOLD)
 		_text("OWNED FORMATIONS · EACH ROW IS ONE SLOT", Vector2(90, 235), 16, MUTED)
 		_text("LOCKED PARTICIPANTS", Vector2(880, 235), 17, GOLD)
 		var row = 0
 		for entry in preview.get("friendly", []):
 			var info = Battle.DEFINITIONS.get(entry.definition, Battle.COMBINED.get(entry.definition))
-			_text(entry.get("name", info.name) + (" · owned" if entry.get("owned", false) else " · local / allied"), Vector2(880, 282 + row * 32), 19, TEAL if entry.get("owned", false) else MUTED)
+			_text(entry.get("name", info.name) + (" · owned" if entry.get("owned", false) else " · local / allied"), Vector2(880, 272 + row * 24), 17, TEAL if entry.get("owned", false) else MUTED)
 			row += 1
-		_wrap("14 × 10 hex field. Directional stone cover blocks 2 ranged damage from its marked face; rough ground costs 2 movement. Hold the crossing for 3 turns or route every enemy. Oathkeeper must survive.", Rect2(880, 622, 580, 126), 19, PAPER, 28)
+		_wrap("Directional stone cover blocks ranged fire from its marked face; rough ground costs 2 movement. All listed participants share the cap. Camp, courier, elite and final encounters require routing enemies; duels require the opposing mech defeated. Siege capture holds the keep for 3 turns. Hero must survive.", Rect2(880, 622, 580, 126), 19, PAPER, 28)
 	_panel(Rect2(70, 705 if phase == "settlement" else 848, 1460, 60), Color("12262e"))
 	_wrap(message, Rect2(90, 714 if phase == "settlement" else 854, 1410, 49), 18, PAPER, 24)
 
@@ -1486,14 +1544,15 @@ func _draw_region_world():
 		elif p not in campaign.visible: draw_colored_polygon(_hex(p, true, 1.04), Color(0.06, 0.14, 0.17, 0.61))
 		if grid_visible:
 			var line = _hex(p, true); line.append(line[0]); draw_polyline(line, Color(0.9, 0.85, 0.65, 0.2), 1, true)
-	for place in Region.SETTLEMENTS:
+	for place in campaign.locations():
 		var p = Region.pos(place.cell)
 		if p not in campaign.explored: continue
 		var center = _pos(p, true)
 		_settlement(center, place.id in ["stonebridge", "emberwatch"])
-		_panel(Rect2(center + Vector2(-65, 20), Vector2(140, 26)), INK)
-		_text(place.name.to_upper(), center + Vector2(-58, 39), 14, PAPER if place.friendly else RED)
+		_panel(Rect2(center + Vector2(-54, 20), Vector2(112, 26)), INK)
+		_text(place.name.to_upper(), center + Vector2(-49, 39), 13, PAPER if place.friendly else RED)
 	for party in campaign.region.parties:
+		if party.id == "bandits" and Quests.claimed(campaign.journal, "camp"): continue
 		if Region.pos(party.cell) not in campaign.visible: continue
 		var offset = {"caravan": Vector2(23, -22), "patrol": Vector2(-8, -22), "bandits": Vector2(-20, -25), "envoy": Vector2(-24, -32), "army": Vector2(18, -28)}[party.id]
 		var center = _npc_position(party.id, Region.pos(party.cell)) + offset
@@ -1504,8 +1563,13 @@ func _draw_region_world():
 		var center = _pos(Region.pos(incident.cell), true)
 		draw_arc(center, 42, 0, TAU, 32, RED, 3, true)
 		_text("ATTACK · %d turns" % (incident.expires - campaign.region.ticks + 1), center + Vector2(-67, -55), 16, RED)
+	var caravan = campaign.inventory.caravan
+	if not caravan.is_empty() and caravan.phase not in ["returned", "lost"]:
+		var cp = _pos(Region.pos(caravan.cell), true)
+		if Region.pos(caravan.cell) in campaign.visible or caravan.phase == "ambushed":
+			_party(cp + Vector2(23, -10), RED if caravan.phase == "ambushed" else GOLD, "YOUR CARAVAN", false)
 	var player_pos = _path_position(animation.path, true) if animation.get("type") == "travel" else _pos(campaign.player, true)
-	_party(player_pos + Vector2(-27, 5), GOLD, "" if not Region.settlement(campaign.player).is_empty() else "YOUR COMPANY", true)
+	_party(player_pos + Vector2(-27, 5), GOLD, "" if not campaign.settlement().is_empty() else "YOUR COMPANY", true)
 	if hovered in campaign.board and animation.is_empty():
 		var path = campaign.path_to(hovered)
 		if not path.is_empty(): _draw_path(path, true)
@@ -1548,7 +1612,7 @@ func _draw_combined_battle():
 		draw_line(center + Vector2(-22, -12), center + Vector2(0, -26), Color("adbaa4"), 3, true)
 	var goal = _pos(battle.objective)
 	draw_arc(goal, 30 * battle_zoom, 0, TAU, 32, GOLD, 3, true)
-	_text("SUPPLY", goal + Vector2(-26, 5), 12, GOLD)
+	_text("KEEP" if battle.deployment.get("kind") == "siege" else "GOAL", goal + Vector2(-23, 5), 12, GOLD)
 	var sorted = battle.units.duplicate()
 	sorted.sort_custom(func(a, b): return a.pos.y < b.pos.y)
 	for u in sorted:
@@ -1558,9 +1622,19 @@ func _draw_combined_battle():
 		var color = TEAL if u.side == 0 else RED
 		var radius = (24 if u.kind == "mech" else 20) * battle_zoom
 		Figures.ellipse(self, center + Vector2(2, 5), Vector2(radius + 3, radius * 0.6), Color(0.03, 0.1, 0.12, 0.45))
-		draw_circle(center + Vector2(0, -5), radius, Color("1d333b"))
 		draw_arc(center + Vector2(0, -5), radius, 0, TAU, 20, GOLD if selected == u.id else color, 3 if selected == u.id else 1.5, true)
-		_draw_role_icon(u.kind, center + Vector2(0, -5), color, battle_zoom)
+		if Mechs.has_art(u):
+			var display = u.duplicate()
+			display.sprite_scale = .65 * battle_zoom
+			var presentation = Mechs.context(u, animation, _progress())
+			if animation.get("type") == "move" and animation.get("id") == u.id:
+				var travel = _mech_travel(animation.path, _progress())
+				display.facing = travel.facing
+				presentation.travel_px = travel.distance
+			Mechs.draw(self, display, center, clock, presentation, reduced_motion or speed_mode == 2)
+		else:
+			draw_circle(center + Vector2(0, -5), radius, Color("1d333b"))
+			_draw_role_icon(u.kind, center + Vector2(0, -5), color, battle_zoom)
 		var front = (_pos(u.pos + Hex.DIRECTIONS[u.facing]) - _pos(u.pos)).normalized()
 		draw_circle(center + Vector2(0, -5) + front * (radius + 4), 3, GOLD)
 		var hp = Rect2(center + Vector2(-22, radius - 1), Vector2(44, 5))
@@ -1635,7 +1709,7 @@ func _draw_role_icon(kind: String, center: Vector2, color: Color, scale_value: f
 	draw_set_transform(Vector2.ZERO)
 
 func _draw_combined_hud():
-	_text("THE CROSSING", Vector2(273, 35), 22, PAPER, true)
+	_text(battle.deployment.get("name", "Battle").left(34), Vector2(273, 35), 20, PAPER, true)
 	_text("ROUND %d · %s · HOLD %d/3" % [battle.round_number, "YOUR TURN" if battle.side == 0 else "ENEMY TURN", battle.objective_progress], Vector2(680, 36), 20, TEAL)
 	_text("%d vs %d · %d × %d field" % [battle.deployment.friendly.size(), battle.deployment.enemy.size(), battle.width, battle.height], Vector2(18, 38), 18, GOLD)
 	var u = battle.occupant(hovered)
@@ -1647,12 +1721,90 @@ func _draw_combined_hud():
 		_text("ATK %d   ARM %d" % [u.attack, u.armor], Vector2(18, 245), 18, GOLD)
 		_text("MOVE %d   RANGE %d" % [u.move, u.range], Vector2(18, 274), 18, GOLD)
 		_wrap("Ability: " + Battle.ability_name(u) + "\n" + ("Ready" if u.cooldown == 0 else "Cooldown: %d own turns" % u.cooldown), Rect2(18, 302, 220, 80), 18, PAPER, 26)
-		_wrap("Guard " + str(battle.guard_reduction({"kind": u.kind, "guard": true}, {"kind": "sword"})) + " reduction.\n" + ("Shaken: one more cohesion loss routes." if u.cohesion == 1 else "Facing sets flank / rear exposure."), Rect2(18, 385, 220, 78), 16, MUTED, 23)
-	_wrap("Hold the gold crossing for 3 consecutive player turns or route all enemies. Hero must survive. Round limit: 16.", Rect2(18, 582, 220, 145), 17, PAPER, 25)
+		_wrap("Guard " + str(battle.guard_reduction({"kind": u.kind, "doctrine": u.get("doctrine", ""), "guard": true}, {"kind": "sword"})) + " reduction.\n" + ("Shaken: one more cohesion loss routes." if u.cohesion == 1 else "Facing sets flank / rear exposure."), Rect2(18, 385, 220, 78), 16, MUTED, 23)
+	_wrap(battle.objective_name + " Round limit: 16.", Rect2(18, 582, 220, 145), 17, PAPER, 25)
 	_wrap("Tab: next · Q: ability\nE: mage mend · B: guard\nWheel: zoom · Arrows: pan\nHome: fit · G: grid", Rect2(18, 756, 220, 132), 15, MUTED, 24)
 	_panel(Rect2(263, 61, 1322, 56), Color(0.06, 0.14, 0.18, 0.94), Color("40574f"))
 	_wrap(message, Rect2(277, 72, 1290, 42), 17, PAPER, 24)
 	if not combat_log.is_empty():
 		_panel(Rect2(263, 736, 1322, 34), Color(0.06, 0.14, 0.18, 0.94), Color("40574f"))
 		_wrap(combat_log[-1], Rect2(277, 741, 1288, 28), 15, GOLD, 20)
-	_text("TEMPORARY 2D TACTICAL MARKERS · ART REVIEW GATE RETAINED", Vector2(465, 889), 12, MUTED)
+	_text("TAP A FORMATION TO SELECT · DRAG TO PAN · PINCH TO ZOOM", Vector2(465, 889), 12, MUTED)
+
+func _open_campaign(tab: String = "Location"):
+	field_touches.clear(); touch_origins.clear(); dragged_touches.clear()
+	if campaign.pending_battle or not animation.is_empty(): return
+	campaign_return_phase = phase if phase == "intro" else "world"
+	if campaign_panel != null:
+		remove_child(campaign_panel); campaign_panel.queue_free()
+	phase = "campaign"; modal = ""
+	_refresh_ui()
+	campaign_panel = CampaignPanel.new()
+	campaign_panel.campaign = campaign; campaign_panel.tab = tab
+	campaign_panel.requested.connect(_campaign_request)
+	campaign_panel.closed.connect(_close_campaign)
+	add_child(campaign_panel)
+
+func _close_campaign():
+	if campaign_panel != null:
+		remove_child(campaign_panel); campaign_panel.queue_free(); campaign_panel = null
+	phase = campaign_return_phase
+	_refresh_ui()
+
+func _campaign_request(action: String, args: Dictionary):
+	if phase != "campaign": return
+	if action == "prepare":
+		var kind = str(args.get("kind", "")); var id = str(args.get("id", ""))
+		if campaign.prepare_region(kind, id).is_empty():
+			campaign_panel.status_text = "Unavailable here. Check the journal, location, costs, route and mission prerequisites. No resources spent."
+			campaign_panel.refresh(); return
+		_close_campaign(); _open_preparation(kind, id); return
+	if action == "workshop": _open_workshop(false); return
+	var before = campaign.snapshot()
+	var response = campaign.order(action, args)
+	if campaign.snapshot() != before and not _checkpoint():
+		campaign.restore(before)
+		response = saves.last_error + " The order was rolled back."
+	if campaign_panel != null:
+		campaign_panel.status_text = response
+		campaign_panel.refresh()
+
+func _field_touch(event) -> bool:
+	var point = to_local(event.position) if event is InputEventScreenTouch or event is InputEventScreenDrag else Vector2.ZERO
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			var field = FIELD if phase == "world" else (Rect2(253, 117, 1347, 615) if battle.combined else Rect2(40, 110, 1370, 650))
+			if not field.has_point(point): return false
+			field_touches[event.index] = point
+			touch_origins[event.index] = point
+			dragged_touches[event.index] = false
+			if field_touches.size() > 1:
+				for index in dragged_touches: dragged_touches[index] = true
+		elif field_touches.has(event.index):
+			var tap = not dragged_touches.get(event.index, true)
+			field_touches.erase(event.index); touch_origins.erase(event.index); dragged_touches.erase(event.index)
+			if tap and animation.is_empty():
+				if phase == "world": _world_click(_cell_at(to_local(event.position), true))
+				else: _battle_click(_battle_cell_at(to_local(event.position)))
+		else: return false
+		get_viewport().set_input_as_handled(); return true
+	if event is InputEventScreenDrag and field_touches.has(event.index):
+		var prior = field_touches[event.index]
+		if point.distance_to(touch_origins[event.index]) > 8: dragged_touches[event.index] = true
+		if phase == "battle" and battle.combined:
+			if field_touches.size() > 1:
+				var other = field_touches.keys().filter(func(index): return index != event.index)[0]
+				var distance = prior.distance_to(field_touches[other])
+				if distance > 1:
+					var next_zoom = clampf(battle_zoom * point.distance_to(field_touches[other]) / distance, .7, 1.6)
+					var center = (point + field_touches[other]) * .5
+					battle_pan = center - Vector2(308, 184) - (center - Vector2(308, 184) - battle_pan) * next_zoom / battle_zoom
+					battle_zoom = next_zoom
+			elif dragged_touches[event.index]: battle_pan += point - prior
+			battle_pan = battle_pan.clamp(Vector2(-300, -200), Vector2(300, 200))
+		field_touches[event.index] = point
+		get_viewport().set_input_as_handled(); return true
+	return false
+
+func _fit_landscape():
+	Landscape.fit(self)

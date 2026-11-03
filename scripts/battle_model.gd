@@ -13,6 +13,10 @@ const COMBINED = {
 	"pikemen": {"name": "March Pikes", "role": "Pike formation", "kind": "pike", "hp": 16, "attack": 6, "armor": 1, "move": 2, "range": 1},
 	"cavalry": {"name": "Road Lancers", "role": "Cavalry formation", "kind": "cavalry", "hp": 16, "attack": 7, "armor": 1, "move": 4, "range": 1},
 	"cannon": {"name": "Guild Cannon", "role": "Field artillery", "kind": "cannon", "hp": 12, "attack": 8, "armor": 0, "move": 2, "range": 5},
+	"shield_mech": {"name": "Bastion", "role": "Shield mech", "kind": "mech", "hp": 38, "attack": 7, "armor": 4, "move": 2, "range": 1, "doctrine": "shield"},
+	"sword_mech": {"name": "Kestrel", "role": "Sword mech", "kind": "mech", "hp": 25, "attack": 10, "armor": 1, "move": 4, "range": 1, "doctrine": "sword"},
+	"lance_mech": {"name": "Lance frame", "role": "Lance mech", "kind": "mech", "hp": 30, "attack": 10, "armor": 2, "move": 3, "range": 2, "doctrine": "lance"},
+	"gunner_mech": {"name": "Cinderjack", "role": "Gunner mech", "kind": "mech", "hp": 26, "attack": 8, "armor": 1, "move": 2, "range": 4, "doctrine": "gunner"},
 	"mages": {"name": "Lantern Circle", "role": "Five-mage circle", "kind": "mage", "hp": 10, "attack": 5, "armor": 0, "move": 3, "range": 3}
 }
 var units = []
@@ -122,7 +126,7 @@ func can_attack(id: String, target_id: String, special: bool = false) -> bool:
 	var b = unit(target_id)
 	if not can_activate(id) or not alive(b) or a.side == b.side:
 		return false
-	if special and (not combined or a.get("cooldown", 0) > 0 or (a.kind in ["gunner", "cannon"] and a.moved)):
+	if special and (not combined or a.get("cooldown", 0) > 0 or (a.kind in ["gunner", "cannon"] and a.moved or a.get("doctrine") == "gunner" and a.moved)):
 		return false
 	var reach = a.range + (1 if special and a.kind == "gunner" else 0)
 	return Hex.distance(a.pos, b.pos) <= reach and has_los(a.pos, b.pos)
@@ -145,7 +149,11 @@ func attack_preview(id: String, target_id: String, special: bool = false) -> Dic
 		cover_value = mini(1, cover_value)
 	if special:
 		bonus = 2
-		if a.kind == "mech": armor = maxi(0, armor - 2)
+		if a.kind == "mech":
+			armor = maxi(0, armor - 2)
+			if a.get("doctrine") == "lance": bonus = 4 if a.get("travelled", 0) >= 2 else 1
+			if a.get("doctrine") == "sword": bonus = 3
+			if a.get("doctrine") == "gunner": cover_value = 0
 		if a.kind == "cannon": cover_value = 0
 		if a.kind == "cavalry": bonus = 4 if a.get("travelled", 0) >= 2 else 0
 	var guard_value = guard_reduction(b, a)
@@ -265,13 +273,18 @@ func ai_action(id: String) -> Dictionary:
 	return guard_unit(id)
 
 static func ability_name(u: Dictionary) -> String:
+	if u.get("doctrine") in ["shield", "sword", "lance", "gunner"]:
+		return {"shield": "Shield breach", "sword": "Overrun", "lance": "Driving thrust", "gunner": "Siege shot"}[u.doctrine]
 	return {"mech": "Breach", "sword": "Shield bash", "pike": "Thrust", "gunner": "Aimed shot", "cavalry": "Charge", "cannon": "Bombard", "mage": "Arc surge"}.get(u.get("kind", ""), "Strike")
 
 static func ability_description(u: Dictionary) -> String:
+	if u.get("doctrine") in ["shield", "sword", "lance", "gunner"]:
+		return {"shield": "+2 damage; ignore 2 armor. Guard reduces damage by 5.", "sword": "+3 damage; ignore 2 armor. Fast light frame.", "lance": "+4 damage after moving 2 hexes, otherwise +1; ignore 2 armor. Reach 2.", "gunner": "+2 damage; ignore 2 armor and cover. Cannot fire the ability after moving."}[u.doctrine]
 	return {"mech": "+2 damage; ignore 2 armor.", "sword": "+2 damage; extra cohesion loss on surviving formations.", "pike": "+2 damage. Guard blocks 6 damage from cavalry.", "gunner": "+2 damage, +1 range. Cannot use after moving.", "cavalry": "+4 damage after moving at least 2 hexes; otherwise no bonus.", "cannon": "+2 damage; ignores cover. Cannot use after moving.", "mage": "+2 damage. All magic ignores armor and all but 1 cover. E: heal 4 within 2 hexes."}.get(u.get("kind", ""), "Select a ready unit.")
 
 func guard_reduction(target: Dictionary, attacker: Dictionary) -> int:
 	if not target.guard: return 0
+	if target.get("doctrine") == "shield": return 5
 	if not combined: return 2
 	if target.kind == "pike" and attacker.kind == "cavalry": return 6
 	return 3 if target.kind in ["mech", "sword", "pike"] else 2
@@ -301,8 +314,11 @@ func mend(id: String, target_id: String) -> Dictionary:
 
 func _check_objective():
 	if not combined or not outcome.is_empty(): return
+	if deployment.get("kind") == "tournament":
+		if round_number > 16: outcome = "defeat"
+		return
 	# One check per completed player side, after all player activations.
-	if side == 1:
+	if side == 1 and deployment.get("kind") not in ["elite", "final", "camp", "investigation"]:
 		var holder = occupant(objective)
 		objective_progress = objective_progress + 1 if not holder.is_empty() and holder.side == 0 else 0
 		if objective_progress >= 3: outcome = "victory"
@@ -325,6 +341,11 @@ func _setup_combined(encounter: Dictionary):
 			elif row % 3 == 2: terrain[p] = 2
 	objective = Hex.cell(width / 2, height / 2)
 	objective_name = "Hold the supply crossing for 3 turns, or route every enemy. Hero must survive."
+	if encounter.get("kind") in ["siege", "final"]:
+		objective = Hex.cell(width - 3, height / 2)
+		objective_name = "Capture the keep for 3 turns or route its defenders. Hero must survive."
+	if encounter.get("kind") == "tournament": objective_name = "Solo duel: defeat the opposing mech. No capture victory."
+	if encounter.get("kind") in ["elite", "final", "camp", "investigation"]: objective_name = "Route every enemy. Hero must survive."
 	for team in 2:
 		var roster = encounter.get("friendly" if team == 0 else "enemy", [])
 		for i in mini(roster.size(), cap):

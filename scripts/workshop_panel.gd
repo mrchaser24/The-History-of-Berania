@@ -2,7 +2,9 @@ extends Control
 const Shop = preload("res://scripts/workshop_model.gd")
 const Crest = preload("res://scripts/crest_view.gd")
 const REFERENCE = preload("res://assets/art/review/oathkeeper_reference.png")
-const STUDY = preload("res://assets/art/review/oathkeeper_study.png")
+const Mechs = preload("res://scripts/mech_art.gd")
+const Pilots = preload("res://scripts/pilot_model.gd")
+const Politics = preload("res://scripts/politics_model.gd")
 signal requested(action: String, args: Dictionary)
 signal closed
 var owner_campaign
@@ -127,7 +129,7 @@ func refresh():
 	var tabs = HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 12)
 	vertical.add_child(tabs)
-	for name in ["Garage", "Equipment", "Market", "Banner", "Art review"]:
+	for name in (["Garage", "Equipment", "Market", "Banner", "Art review"] if review_mode else ["Garage", "Equipment", "Market", "Banner"]):
 		var button = _button(tabs, name, _choose_tab.bind(name))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if name == tab:
@@ -154,7 +156,7 @@ func refresh():
 	var footer = HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 20)
 	vertical.add_child(footer)
-	var note = _label(footer, "Prototype 0.2 · Complete 3D models → rendered 2D sprites. Animation replacement awaits visual review.", 16, Color("aeb8ae"))
+	var note = _label(footer, "2D whole-character sprites · Fixed sword & shield · Left / right facings", 16, Color("aeb8ae"))
 	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if review_mode:
 		_button(footer, "Reset review", _confirm_reset)
@@ -172,7 +174,7 @@ func _confirm_reset():
 func _frame_list(parent: Node) -> VBoxContainer:
 	var left = _column(parent, "YOUR MACHINES", 255)
 	for f in owner_campaign.workshop.frames:
-		_button(left, f.name + ("  ·  YOUR PILOT" if f.id == owner_campaign.workshop.pilot_frame else "  ·  RESERVE"), func(): selected_frame = f.id; refresh())
+		_button(left, f.name + ("  ·  " + Pilots.assigned(owner_campaign.pilots, f.id).capitalize() if not Pilots.assigned(owner_campaign.pilots, f.id).is_empty() else "  ·  RESERVE"), func(): selected_frame = f.id; refresh())
 	_label(left, "Reserve machines remain yours. They take no cargo or battle slots until deployed.", 17, Color("aeb8ae"))
 	return left
 
@@ -180,13 +182,19 @@ func _garage(body: Node):
 	_frame_list(body)
 	var f = Shop.frame(owner_campaign.workshop, selected_frame)
 	var values = Shop.stats(owner_campaign.workshop, f)
-	var art = _column(body, "KNIGHT-PATTERN CHASSIS", 330)
-	_picture(art, REFERENCE)
-	_label(art, "Approved concept reference · final animation pending", 15, Color("aeb8ae"))
+	var art = _column(body, Shop.CHASSIS[f.chassis].name.to_upper(), 330)
+	if f.chassis == "knight":
+		_picture(art, Mechs.preview_texture())
+		_label(art, "Oathkeeper · complete detailed 2D sprite · permanent sword & shield", 15, Color("aeb8ae"))
+	else:
+		var crest = Crest.new(); crest.banner = owner_campaign.workshop.banner; crest.custom_minimum_size = Vector2(260, 300); art.add_child(crest)
+		_label(art, "Fixed-design frame · tactical symbol while its detailed artwork remains in production", 18, Color("aeb8ae"))
 	var detail = _column(body, f.name, 310)
 	_label(detail, "HULL %d / %d\nATTACK %d  ·  ARMOR %d\nMOVE %d  ·  RANGE %d\nHULL REFIT %d / 2" % [f.hp, values.hp, values.attack, values.armor, values.move, values.range, f.refit], 23)
+	var current = Shop.stats(owner_campaign.workshop)
+	_label(detail, "Compared with active frame: hull %+d · attack %+d · armor %+d · move %+d · reach %+d" % [values.hp - current.hp, values.attack - current.attack, values.armor - current.armor, values.move - current.move, values.range - current.range], 17, Color("8fb9af"))
 	_button(detail, "Pilot this frame", _request.bind("assign", {"frame": f.id}), f.id == owner_campaign.workshop.pilot_frame or f.hp <= 0)
-	_button(detail, "Try this loadout  ·  practice battle", _request.bind("trial", {}), f.id != owner_campaign.workshop.pilot_frame)
+	if review_mode: _button(detail, "Try this machine  ·  practice battle", _request.bind("trial", {}), f.id != owner_campaign.workshop.pilot_frame)
 	_button(detail, "Hull refit  ·  18 gold  ·  +4 max hull", _request.bind("refit", {"frame": f.id}), f.refit >= 2)
 	var repair_cost = maxi(1, ceili((values.hp - f.hp) / 5.0))
 	_button(detail, "Hull fully repaired" if f.hp == values.hp else "Repair  ·  %d gold" % repair_cost, _request.bind("repair", {"frame": f.id}), f.hp == values.hp)
@@ -196,14 +204,14 @@ func _garage(body: Node):
 	detail.add_child(name_input)
 	_button(detail, "Rename machine", func(): _request("rename", {"frame": f.id, "name": name_input.text}))
 	_button(detail, "Sell frame  ·  +45 gold", _request.bind("sell_frame", {"frame": f.id}), f.id == owner_campaign.workshop.pilot_frame)
-	_label(detail, "Refits preserve current damage. Modules and equipment stay with the machine when you change pilots.", 16, Color("aeb8ae"))
+	_label(detail, "Refits preserve current damage. Internal upgrades stay with the machine when you change pilots.", 16, Color("aeb8ae"))
 
 func _equipment(body: Node):
 	_frame_list(body)
 	var f = Shop.frame(owner_campaign.workshop, selected_frame)
 	var slots = _column(body, "FITTINGS  /  " + f.name, 330)
-	_label(slots, "Right mount: Knight's sword\nLeft mount: Kite shield", 22)
-	_label(slots, "This prototype supports the starting sword/shield set. New weapon classes need reviewed animations.", 17, Color("aeb8ae"))
+	_label(slots, "Permanent weapons: " + {"knight": "Knight's sword & kite shield", "bulwark": "shield & sidearm", "scout": "sword", "lancer": "fixed lance", "gunner": "fixed gun", "advanced": "sword & shield"}[f.chassis], 22)
+	_label(slots, "Weapons are fixed to this mech. Internal upgrades change stats without changing its sprite or weapons.", 17, Color("aeb8ae"))
 	for slot in ["module_a", "module_b"]:
 		var owned = Shop.item(owner_campaign.workshop, f[slot])
 		_label(slots, slot.replace("_", " ").to_upper() + "\n" + ("Empty" if owned.is_empty() else Shop.ITEMS[owned.definition].name), 21, Color("c5a46b"))
@@ -226,29 +234,35 @@ func _equipment(body: Node):
 
 func _market(body: Node):
 	var machines = _column(body, "MACHINES & MODULES", 365)
-	_label(machines, "Refurbished Knight\n90 gold · 30 hull · sword & shield", 23)
-	_button(machines, "Buy reserve frame  ·  90 gold", _request.bind("buy_frame", {}))
+	for chassis in Shop.CHASSIS:
+		var info = Shop.CHASSIS[chassis]
+		_label(machines, "%s · hull %d · atk %d · armor %d · move %d · reach %d" % [info.name, info.hp, info.attack, info.armor, info.move, info.range], 19)
+		var merrow = Politics.house(owner_campaign.politics, "merrow")
+		var unavailable = chassis == "advanced" and "recruitment" not in merrow.agreements and merrow.owner != "player" and not owner_campaign.chronicle.bargain_claimed
+		_button(machines, "Buy fixed frame · %d gold" % info.price, _request.bind("buy_frame", {"chassis": chassis}), unavailable)
 	for definition in ["armor", "actuator"]:
 		var data = Shop.ITEMS[definition]
 		_label(machines, data.name + ("\n+1 armor · −1 move" if definition == "armor" else "\n+1 move · −1 armor"), 20)
 		_button(machines, "Buy  ·  %d gold" % data.price, _request.bind("buy_item", {"definition": definition}))
 	var trade = _column(body, "TRADE GOODS", 330)
-	for good in ["grain", "ore"]:
-		var data = Shop.GOODS[good]
+	for good in Shop.GOODS:
+		var data = Shop.GOODS[good].duplicate()
+		data.buy = Shop.price(good, owner_campaign.settlement().get("id", ""), true)
+		data.sell = Shop.price(good, owner_campaign.settlement().get("id", ""), false)
 		_label(trade, "%s  ·  carrying %d\nBuy %d / sell %d gold each" % [data.name, owner_campaign.workshop.cargo.get(good, 0), data.buy, data.sell], 22)
 		_button(trade, "Buy 5 " + data.name.to_lower(), _request.bind("buy_good", {"good": good, "quantity": 5}))
 		_button(trade, "Sell 5 " + data.name.to_lower(), _request.bind("sell_good", {"good": good, "quantity": 5}))
 	var ledger = _column(body, "THE QUARTERMASTER", 290)
 	_label(ledger, "Cargo %d / 20\nWorkshop reserves use no cargo capacity." % Shop.cargo_used(owner_campaign.workshop), 23)
 	_label(ledger, "Gold changes only after a validated order. Full holds, unavailable goods, and unaffordable purchases leave everything unchanged.", 19, Color("aeb8ae"))
-	_label(ledger, "One chassis is available for this prototype. Cinderjack, Kestrel, and Bastion remain future production designs.", 18, Color("aeb8ae"))
+	_label(ledger, "Fixed frame roles differ in speed, reach and protection. Oathkeeper has detailed art; other frames use supporting symbols until their artwork is produced.", 18, Color("aeb8ae"))
 
 func _banner(body: Node):
 	var options = _column(body, "YOUR WARBAND", 360)
 	var unlocked = owner_campaign.workshop.headquarters
 	_label(options, "Found your cause. Choose two colors and one emblem.", 23)
 	if not unlocked:
-		_label(options, "Headquarters is not yet established in the prologue. Workshop review lets you try this later milestone.", 19, Color("8fb9af"))
+		_label(options, "Clear the bandit camp, obtain Greyford's permission and found the watchhouse headquarters to declare your banner.", 19, Color("8fb9af"))
 	var name_input = LineEdit.new()
 	name_input.text = banner_draft.name
 	name_input.max_length = 28
@@ -279,13 +293,13 @@ func _banner(body: Node):
 	preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	display.add_child(preview)
 	_label(display, "Cosmetic identity · no combat bonus", 19, Color("c5a46b"))
-	_label(display, "The same saved crest can appear on standards and campaign markers. Animated mech-panel compositing remains an art-pipeline milestone.", 18, Color("aeb8ae"))
+	_label(display, "Your warband name and crest identify the headquarters and party. They do not change your inherited house, diplomatic recognition or fixed mech designs.", 18, Color("aeb8ae"))
 
 func _art_review(body: Node):
 	var original = _column(body, "APPROVED ORIGINAL", 450)
 	_picture(original, REFERENCE, 445)
 	_label(original, "Oathkeeper's visual authority: complete ivory/navy knight, sword, and shield.", 18, Color("aeb8ae"))
-	var source = _column(body, "3D SOURCE STUDY  /  AWAITING REVIEW", 450)
-	_picture(source, STUDY, 445)
-	_label(source, "Unapproved blockout · not rigged · not animated · not used as battle art", 18, Color("8fb9af"))
-	_label(source, "Next: refine the model to the original, then review smooth motion at game size. The game stays 2D; complete 3D animations will be rendered into sprites.", 18)
+	var source = _column(body, "WHOLE-CHARACTER 2D SPRITE", 450)
+	_picture(source, Mechs.preview_texture(), 445)
+	_label(source, "Fixed sword & shield · complete animation frames · left / right", 18, Color("8fb9af"))
+	_label(source, "Open Oathkeeper · 2D sprite animations from the title screen to see idle, walk, attack, guard and both hit reactions. Every frame contains the whole mech and its permanent weapons.", 18)

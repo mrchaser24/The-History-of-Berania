@@ -1,5 +1,6 @@
 extends RefCounted
-## Pure ownership/transaction model. Rendering and file writes belong to callers.
+## Pure ownership/transactions. Fixed weapons; only internal modules can change.
+## right/left and sword/shield item IDs remain legacy save-compatible records.
 const COLORS = ["243448", "c5a46b", "eee5d1", "52684c", "8d4040", "587b91"]
 const EMBLEMS = ["sun", "sword", "tower"]
 const ITEMS = {
@@ -8,8 +9,26 @@ const ITEMS = {
 	"armor": {"name": "Reinforced plating", "kind": "module", "price": 12, "attack": 0, "armor": 1, "move": -1},
 	"actuator": {"name": "Tuned actuators", "kind": "module", "price": 16, "attack": 0, "armor": -1, "move": 1}
 }
-const GOODS = {"grain": {"name": "Grain", "buy": 3, "sell": 2}, "ore": {"name": "Iron ore", "buy": 6, "sell": 4}}
+const GOODS = {"grain": {"name": "Grain", "buy": 3, "sell": 2}, "ore": {"name": "Iron ore", "buy": 6, "sell": 4}, "medicine": {"name": "Field medicine", "buy": 8, "sell": 5}}
 const CARGO_CAPACITY = 20
+# Fixed whole frames: stats and doctrine differ; permanent weapons never change.
+const CHASSIS = {
+	"knight": {"name": "Knight", "definition": "militia_mech", "hp": 30, "attack": 9, "armor": 2, "move": 3, "range": 1, "price": 90},
+	"bulwark": {"name": "Bastion", "definition": "shield_mech", "hp": 38, "attack": 7, "armor": 4, "move": 2, "range": 1, "price": 100},
+	"scout": {"name": "Kestrel", "definition": "sword_mech", "hp": 25, "attack": 10, "armor": 1, "move": 4, "range": 1, "price": 80},
+	"lancer": {"name": "Lance frame", "definition": "lance_mech", "hp": 30, "attack": 10, "armor": 2, "move": 3, "range": 2, "price": 95},
+	"gunner": {"name": "Cinderjack gunner", "definition": "gunner_mech", "hp": 26, "attack": 8, "armor": 1, "move": 2, "range": 4, "price": 85},
+	"advanced": {"name": "Merrow Crownward", "definition": "shield_mech", "hp": 42, "attack": 11, "armor": 3, "move": 3, "range": 1, "price": 140}
+}
+
+static func add_frame(state: Dictionary, chassis: String, name: String) -> String:
+	var id = _id(state, "frame")
+	state.frames.append({"id": id, "chassis": chassis, "name": name, "hp": CHASSIS[chassis].hp, "refit": 0, "right": _add_item(state, "sword"), "left": _add_item(state, "shield"), "module_a": "", "module_b": ""})
+	return id
+
+static func price(good: String, place: String, buying: bool) -> int:
+	var markets = {"greyford": {"grain": [3,2], "ore": [6,4], "medicine": [8,5]}, "stonebridge": {"grain": [4,3], "ore": [5,4], "medicine": [7,6]}, "millhaven": {"grain": [2,1], "ore": [7,6], "medicine": [6,4]}}
+	return markets.get(place, {}).get(good, [GOODS[good].buy, GOODS[good].sell])[0 if buying else 1]
 
 static func defaults(hp: int = 18) -> Dictionary:
 	return {
@@ -37,7 +56,8 @@ static func item(state: Dictionary, id: String) -> Dictionary:
 static func stats(state: Dictionary, f: Dictionary = {}) -> Dictionary:
 	if f.is_empty():
 		f = frame(state)
-	var result = {"hp": 30 + int(f.get("refit", 0)) * 4, "attack": 9, "armor": 2, "move": 3, "range": 1}
+	var base = CHASSIS.get(f.get("chassis", "knight"), CHASSIS.knight)
+	var result = {"hp": base.hp + int(f.get("refit", 0)) * 4, "attack": base.attack, "armor": base.armor, "move": base.move, "range": base.range}
 	for slot in ["module_a", "module_b"]:
 		var owned = item(state, f.get(slot, ""))
 		if not owned.is_empty() and ITEMS.has(owned.definition):
@@ -69,7 +89,7 @@ static func valid(state) -> bool:
 	for key in ["frames", "items"]:
 		if not state.get(key) is Array:
 			return false
-	if state.frames.is_empty() or state.frames.size() > 128 or state.items.size() > 512:
+	if state.frames.is_empty() or state.frames.size() > 256 or state.items.size() > 1024:
 		return false
 	if not state.get("pilot_frame") is String or not integer(state.get("next_id"), 1, 1000000000):
 		return false
@@ -90,7 +110,7 @@ static func valid(state) -> bool:
 	var fitted = {}
 	var active_found = false
 	for f in state.frames:
-		if not f is Dictionary or not f.get("id") is String or f.get("chassis") != "knight":
+		if not f is Dictionary or not f.get("id") is String or f.get("chassis") not in CHASSIS:
 			return false
 		if not f.id.begins_with("frame_") or not f.id.trim_prefix("frame_").is_valid_int() or ids.has(f.id):
 			return false
@@ -101,7 +121,7 @@ static func valid(state) -> bool:
 		ids[f.id] = true
 		if not f.get("name") is String or f.name.strip_edges().is_empty() or f.name.length() > 40 or "\n" in f.name or "\r" in f.name:
 			return false
-		if not integer(f.get("refit"), 0, 2) or not integer(f.get("hp"), 0, 30 + int(f.refit) * 4):
+		if not integer(f.get("refit"), 0, 2) or not integer(f.get("hp"), 0, CHASSIS[f.chassis].hp + int(f.refit) * 4):
 			return false
 		for slot in ["right", "left", "module_a", "module_b"]:
 			if not f.get(slot) is String:
@@ -169,12 +189,13 @@ static func transact(source: Dictionary, gold: int, action: String, args: Dictio
 	var message = ""
 	match action:
 		"buy_frame":
-			if state.frames.size() >= 128:
+			if state.frames.size() >= 120:
 				return failure
-			cost = 90
-			var id = _id(state, "frame")
-			state.frames.append({"id": id, "chassis": "knight", "name": "Reserve Knight " + id.trim_prefix("frame_"), "hp": 30, "refit": 0, "right": _add_item(state, "sword"), "left": _add_item(state, "shield"), "module_a": "", "module_b": ""})
-			message = "A refurbished knight frame joins the garage, with a sword and shield."
+			var chassis = str(args.get("chassis", "knight"))
+			if chassis not in CHASSIS: return failure
+			cost = CHASSIS[chassis].price
+			add_frame(state, chassis, CHASSIS[chassis].name + " " + str(state.next_id))
+			message = "Fixed-design frame delivered to the shared garage."
 		"assign":
 			if selected.is_empty() or selected.hp <= 0:
 				return {"ok": false, "message": "Repair that frame before assigning your pilot."}
@@ -185,7 +206,7 @@ static func transact(source: Dictionary, gold: int, action: String, args: Dictio
 				return {"ok": false, "message": "Assign another usable frame before selling this machine."}
 			state.frames.erase(selected)
 			cost = -45
-			message = "Frame sold for 45 gold. Its equipment remains in the armory."
+			message = "Frame sold for 45 gold. Internal upgrades remain in storage."
 		"refit":
 			if selected.is_empty() or selected.refit >= 2:
 				return {"ok": false, "message": "This frame already has its maximum hull refit."}
@@ -209,7 +230,7 @@ static func transact(source: Dictionary, gold: int, action: String, args: Dictio
 			message = "Machine name updated."
 		"buy_item":
 			var definition = str(args.get("definition", ""))
-			if not ITEMS.has(definition) or state.items.size() >= 512:
+			if not ITEMS.has(definition) or ITEMS[definition].kind != "module" or state.items.size() >= 480:
 				return failure
 			cost = ITEMS[definition].price
 			_add_item(state, definition)
@@ -233,19 +254,19 @@ static func transact(source: Dictionary, gold: int, action: String, args: Dictio
 			if action == "buy_good":
 				if cargo_used(state) + quantity > CARGO_CAPACITY:
 					return {"ok": false, "message": "Your cargo hold is full. Capacity: 20 goods."}
-				cost = int(quantity) * GOODS[good].buy
+				cost = int(quantity) * price(good, str(args.get("place", "")), true)
 				state.cargo[good] = int(state.cargo.get(good, 0)) + int(quantity)
 			else:
 				if state.cargo.get(good, 0) < quantity:
 					return {"ok": false, "message": "You do not carry that quantity."}
-				cost = -int(quantity) * GOODS[good].sell
+				cost = -int(quantity) * price(good, str(args.get("place", "")), false)
 				state.cargo[good] -= int(quantity)
 				if state.cargo[good] == 0:
 					state.cargo.erase(good)
 			message = "Trade completed. Workshop reserves do not occupy cargo space."
 		"banner":
 			if not state.headquarters:
-				return {"ok": false, "message": "Found your headquarters before declaring a personal banner. Try it in Workshop review."}
+				return {"ok": false, "message": "Found your headquarters before declaring a personal banner."}
 			if not args.get("banner") is Dictionary:
 				return failure
 			state.banner = args.get("banner", {}).duplicate(true)

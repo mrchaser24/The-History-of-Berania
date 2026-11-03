@@ -1,40 +1,55 @@
-# Persistent project memory
+# Persistent Project Memory
 
-Explicit user decisions, not inferred preferences. Updated November 1, 2026.
+**Updated:** November 3, 2026. Explicit user decisions take precedence over older plans. Read this before design, art, equipment or gameplay changes.
 
-- **Mech appearance:** The complete original ivory/navy knight illustration is Oathkeeper's visual authority (`assets/art/mechs/concepts/oathkeeper.png`). The user rejected both assembled 2D cutout revisions. Passing functional checks does not establish visual approval.
-- **Production approach (reconfirmed in the validation discussion):** Keep the game 2D. Use complete, faithful rigged 3D source models, animate them coherently, and render consistent sprites. The user clarified that this is the intended replacement for the bad cutout motion, rather than selecting live runtime 3D battles. Validate a matching still, then smooth motion at gameplay size before expansion. Do not return to disconnected generated body parts stretched through a generic 2D skeleton.
-- **Interchangeable equipment:** Mech weapons and shields can change. Keep them separate from the body, with stable attachment points and consistent scale/grips. The starting sword and shield are an initial loadout, not permanent body geometry. Equipment must remain replaceable without rebuilding the mech or changing its identity.
-- **Animation compatibility:** Future weapon classes may need their own attack/hold poses. Keep the body rig reusable and accommodate shield-dependent guard/block presentation. Do not assume every future weapon uses the starting sword animation.
-- **Variety:** All four mech concepts are approved; Oathkeeper is the starting mech. Cinderjack, Kestrel, and Bastion are future production designs.
-- **Visual workflow:** Compare the first model render directly with the original reference, including gameplay size, before expanding animations or integration. Keep all views derived from the same model and render setup. A sprite atlas is packaging, not the source of character consistency.
+## Latest instruction — core functions and detailed 2D
 
-## Story and campaign decisions — November 1, 2026 interview
+- The user requested a **new chat session**, a return from pixel art to the good detailed artwork, implementation of the main functions first, removal of all 3D work and unnecessary planning, and **no more QA**.
+- Active roadmap: `plan/initial-plan.md`, revision 2.1. Implement its remaining functions in order; do not substitute further planning or animation experiments for coding.
+- Detailed painted/inked whole-character 2D art is active again. `scripts/mech_art.gd` loads the existing `assets/art/mechs/oathkeeper/fullbody/v004/` atlas and its original left-facing source convention. Pixel art is historical/offline.
+- No 3D work, model/rig/render pipeline, full rotations, segmented bodies, modular/custom weapons or new pixel-vs-detailed comparisons. Retired 3D, pixel, review, QA and build resources were removed from the workspace.
+- Do not run or create QA, automated tests, review sessions, captures, benchmarks or milestone acceptance exercises. Ordinary runtime validation, save backups, eligibility checks and transaction guards remain functional requirements.
+- Complete campaign functions before further art production. The detailed walking/attack limitations have not been solved or newly approved by restoring the art. Do not claim smoothness from source counts or historical results.
+- Preserve unrelated user edits, original artwork and real saves. Never reset the dirty checkout or rewrite player saves during implementation.
+- Zero spending: no paid API, subscriptions, purchases, upgrade or external service dependency. Use the existing Godot/GDScript project and available local art.
 
-- **World:** Medieval magitech civilization; mechs are rare military assets and firearms are early/scarce. Traditional weapons remain useful.
-- **Protagonist and relationships:** Player-named male with fixed noble history and customizable appearance/conduct. He and the princess are already deeply in love; the second prince was his close childhood friend. The princess is the eldest child, compassionate and politically sharp; the emperor's first son died before the coup.
-- **Cause of the coup:** The emperor has the second prince's mother assassinated to erase the shame of the concubine relationship, then plans to kill the prince out of unfounded fear for his daughter. The prince initially intended no harm to his sister or her succession and strikes first to survive. The archduke knew nothing of the persecution.
-- **Hunt and betrayal:** The prince wrongly believes the archduke and protagonist were accomplices and seeks the protagonist's capture, imprisonment, and execution. His commander kills the archduke during the escape. A treacherous relative takes the protagonist's domain as one of the twelve loyalist noble seats.
-- **Politics:** Ten nobles begin as independent competing factions that can form blocs; twelve initially support the usurper. Keep 22 total seats. Allied nobles provide background campaign support through troops, funding, access, territory, diplomacy, and armies. Captured nobles do not automatically join. This supersedes the earlier 1–3 allied noble-pilot deployment idea.
-- **Rescue and branch:** Learn the old emperor's crimes before the midpoint decision. Three of the twelve loyalists offer four veteran formations, an advanced unassigned mech frame, and gold if the player abandons the princess. They want a dependent ruler. Refusing makes their elite force an enemy; accepting is an explicit permanent fork, with no later return to restoration.
-- **Princess and endings:** Restoration uses a midpoint prison raid before capital conquest; she then leads politically and can pilot a mech. On the dark route she organizes an independent escape with an ally and survives in exile. Both routes settle the whole imperial war. The prince refuses surrender and dies fighting. Restoration ends with empress/prince-consort marriage; the alternate route crowns the protagonist.
-- **Throne:** It amplifies personal magic/perception and contributes to dependence and corruption, without removing the prince's responsibility. Its influence on the old emperor remains uncertain. The happy ending destroys its magical mechanism.
-- **Battle size and pilots:** Up to ten commandable units per side ordinarily, fifteen in major battles/sieges. Each deployed mech, cannon, or troop formation counts as one. Up to five companions; all are mech pilots and need an assigned available frame. Allied nobles are campaign support, while the protagonist, princess, and companions are personal hero pilots.
-- **Banner:** Simple crest creator with two colors and one centered preset emblem.
-- **Mech ownership:** Buy, receive, retain, store/hide, and swap frames; use distinct frames with fitted equipment/modules rather than full body-part assembly. Shared reserve inventory is accessible at any friendly workshop. Begin with only Oathkeeper.
-- **Inventory:** Shared party mech gear, modules, loot, and trade goods; ordinary soldiers upgrade as formations. No individual human equipment inventory in the selected scope.
+## Game and presentation decisions
 
-New character/house names, ages, companion concepts, the first son's border-war death, and detailed implementation defaults are authored drafts in the plans; do not present them as separately user-specified facts or new visual approvals.
+- Single-player medieval-magitech strategy RPG. Turn-based hex travel and tactical battles, painted continuous scenery, hidden grid by default, temporary path/target overlays, fixed 2D viewpoint and optional battle focus.
+- Desktop, Android and iPhone targets; landscape layout. Main functions take priority over platform/performance exercises.
+- Fixed complete mechs and permanent weapon sets. Oathkeeper retains its ivory/navy/gold knight design, sword and shield. Only left/right whole-image mirroring is required; six hex-facing sectors remain a separate combat rule.
+- No weapon buying/swapping, custom sockets or body-part assembly. Buy/receive/store/swap frames, repair, refit hulls and fit internal stat modules. Keep legacy save weapon fields readable without exposing customization.
+- Shared frame/module reserves are available at friendly workshops. Carried trade goods obey cargo capacity. Required quest items are protected; no individual human armor/helmet/boot equipment inventory.
+- Ordinary formations show four soldiers, mage circles five mages, cannon one gun plus two crew, and mechs one complete machine. Every formation/cannon/mech counts as one commandable unit.
+- Ten units per side ordinarily; fifteen in major encounters/sieges, including allies, settlement defenders and all personal mechs. No free companion slots or hidden reinforcement bypass.
+- One player warband/army. Bounded NPC party jobs, trade, rescue incidents, house diplomacy and a simple siege/conquest model; no elaborate construction, upkeep or production-chain simulation.
+- Banner scope is two colors and one centered original emblem, with warband naming at headquarters. It does not change legal house identity or diplomatic recognition.
+- Oathkeeper is the starter; Cinderjack, Kestrel and Bastion remain approved future concepts, not completed animated units. Supporting unit symbols are temporary while functions are built.
 
-Current art work: `plan/mech-art-direction.md` and `docs/mech-production-brief.md`. Story authority: `plan/story-canon.md`. Adopted campaign systems and staged acceptance criteria: `plan/campaign-refinement.md`. Milestone history: `plan/initial-plan.md`. Gap audit and remaining gates: `plan/validation-review.md`.
+## Story authority
 
-## Implementation status — separate from user design decisions
+Read `plan/story-canon.md` for the full plot and draft house/cast register. Preserve these settled decisions:
 
-Prototype 0.2 adds a title-screen Workshop review with its own save, frame ownership/pilot assignment, repairs/refits/modules, cargo trade, banner preview, and loadout practice. The real village workshop opens after its defense. Campaign saves migrate from schema 1 to 2. See `qa/prototype-0.2-review.md` for verification and limits.
+- Player-named male archduke's son; fixed noble history and existing mutual love with the eldest princess; the second prince was his close childhood friend.
+- The old emperor secretly has the prince's mother assassinated, then plans to kill the initially innocent prince out of paranoia. The archduke knew nothing. The prince strikes first, imprisons his sister, wrongly accuses the protagonist/father, and orders their hunt.
+- An imperial commander kills the father during the escape. The protagonist escapes alone, penniless, in damaged Oathkeeper. A treacherous relative takes the family seat.
+- Exactly 22 noble seats: ten independent competing breakaway houses, twelve initially loyalist seats. The dead father is not an extra living ruler; the imperial family is separate.
+- Nobles supply campaign support, not automatic personal pilot recruitment. Personal pilots are protagonist, restored princess and up to five companions, each needing a distinct assigned frame.
+- A required investigation reveals the old emperor's crimes before the midpoint bargain; optional companions cannot gate it.
+- Three loyalist houses offer four veteran formations, one advanced unassigned frame and gold for abandoning restoration. Acceptance permanently locks the self-crowning route and grants assets once. Refusal leads to the elite force and the midpoint prison rescue.
+- Restoration rescue does not itself capture the capital. The princess leads politically and can pilot a frame. On dominion she organizes an independent escape and survives in exile.
+- Both routes settle the whole civil war through explicit house recognition, diplomacy/submission/conquest and the final confrontation. Coalition settlements can avoid repetitive conquest.
+- The prince refuses surrender and dies fighting. Restoration crowns the princess empress with the protagonist prince-consort, marriage and destruction of the throne mechanism. Dominion crowns the protagonist while the princess survives abroad. The throne amplifies choices/dependence rather than removing responsibility.
+- Names, ages, companion biographies and detailed scenes are authored drafts unless specifically user-established. Preserve canon without treating all prose/art as separately approved.
 
-The existing 3D model study is still unapproved, unrigged, and unanimated. Art review compares it with the original; it does not approve the study or replace battle art. Do not mistake the workshop prototype's functional completion for acceptance of the rejected cutout renderer or permission to bypass the still/motion review sequence.
+## Current implementation boundary
 
+The November 3 implementation adds connected source functions for P1–P6: persistent journal and defense → camp → explicit permission → headquarters; warband/banner and formal troops; categorized inventory/loot and field medicine; funded merchant caravan/rescue; solo tournament; distinct pilot/formation/frame progression; five optional personal pilots with exclusive assignments; 22-seat diplomacy, counteroffers, custody/succession, war/peace, domain sieges/control/taxes; required investigation; permanent sponsor bargain; restoration rescue or independent exile; explicit recognition/coalitions; final confrontation and both canon endings with bounded epilogues.
 
-Prototype 0.3 (November 2) connects the preserved opening/workshop to a bounded four-settlement regional loop, five roaming party kinds, timed incidents, guild cargo deliveries, paid recruitment, one house-support pact and supply raids. Regional battles use locked owned-frame/formation snapshots, cover, rough terrain, seven roles, abilities and persistent casualties/replenishment. Ordinary fields are 14×10; separate 10-v-10/15-v-15 capacity practices include allies in the shared cap. Saves migrate schemas 1/2 to 3. Regional review has its own save and no headquarters. See `qa/prototype-0.3-review.md` and `docs/regional-combat-rules.md` for actual verification and limits. This is implementation status, not a new user design decision or completion of the full campaign.
+New focused models are `quest_model.gd`, `economy_model.gd`, `pilot_model.gd`, `politics_model.gd` and `chronicle_model.gd`; `campaign_panel.gd` connects ordinary menus, and `landscape_layout.gd` fits the mobile canvas to display safe areas. Regional controls include next-unit navigation, touch drag/pinch and zoom/pan/fit. Schema 4 preserves schemas 1/2/3 through conservative migration and retains runtime validation, one-time claims and failed-save rollback.
 
-New regional battles use explicitly temporary original 2D tactical symbols. The original opening/trial retain their old renderer. No source model, rig, animation, still/motion approval, or runtime-3D decision changed.
+These are source implementations, not exercised gameplay evidence. No Godot run, QA, automated tests, captures, benchmarks or packaging were performed; actual player saves were not opened or rewritten. No packaged build remains in the workspace.
+
+Read `plan/implementation-state.md` for the exact connected path, authored balance defaults and remaining boundary. New faces, fuller ruler/companion scenes, additional scenery and detailed non-Oathkeeper unit animation are not finished. Bounded portrait choices currently use available original heraldic emblems, clearly labeled. The existing detailed walk/attack limitations remain; do not restart QA or art experiments.
+
+The previous planning archive, QA captures, stale build, 3D/pixel/review pipelines, tests and generated editor cache were removed to reduce workspace size. Preserve unrelated existing dirty changes, active original art, internal save isolation and real player saves. Numerical balance values and generic domain/ruler/mission details added during implementation are authored defaults, not newly approved user canon.

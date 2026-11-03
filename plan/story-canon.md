@@ -4,7 +4,7 @@
 
 **Status:** User-established plot and choices, with clearly labeled authored draft additions. These events supersede revision 1 and incompatible older roadmap text. They describe the intended campaign, not newly implemented gameplay.
 
-Oathkeeper is the approved starting mech. Names and ages of people, houses, and supporting characters below are draft writing choices, not separate user approvals of their art or final dialogue. The current demo remains a small narrated opening.
+Oathkeeper is the approved starting mech. Names and ages of people, houses, and supporting characters below are draft writing choices, not separate user approvals of their art or final dialogue. The source now connects the narrated opening to a bounded campaign implementation; its detailed authored scenes and additional character art remain expandable.
 
 ## World and tone
 
@@ -158,8 +158,8 @@ Companion quests are optional and cannot gate the investigation, rescue choice, 
 
 Use Emperor/empress for Berania's sovereign, prince-consort for the restored protagonist, and usurper/new emperor for Lucien until his defeat. Concubine birth is family context; the crimes against Selene and Lucien, followed by Lucien's choices, cause this conflict.
 
-Existing saves retain earned resources and progress. The current demo's narration reflects revision 1 in places; aligning runtime text to this revision is future implementation, not work completed by these document changes. Keep the illustrated opening, free essential recovery, and solo zero-gold new game.
+Existing saves retain earned resources and progress. The source now connects the revised opening to investigation, the permanent bargain, rescue/exile, recognition and both campaign outcomes; see `implementation-state.md` for its bounded scope. This is not an exercised playthrough or new art approval. Keep the illustrated opening, free essential recovery and solo zero-gold new game.
 
 Still to write or tune: exact assassination methods, detailed scene dialogue, domains and remaining ruler biographies, quest layouts, dates beyond the draft ages, unit statistics, grant amounts, and full campaign pacing. The prince's motive, princess's survival, branch permanence, rescue timing, father's innocence, noble roles, and two main endings are settled.
 
-See [the campaign systems refinement](campaign-refinement.md) for banner creation, workshops, upgrades, inventory, battle limits, persistence, and acceptance scenarios. The [project roadmap](initial-plan.md) retains milestone history. [Mech art direction](mech-art-direction.md) remains the visual production authority.
+See [the campaign systems refinement](campaign-refinement.md) for banner creation, workshops, upgrades, inventory, battle limits, persistence, and acceptance scenarios. The [project roadmap](initial-plan.md) specifies the current gameplay-first implementation order. [Mech art direction](mech-art-direction.md) remains the visual production authority.
